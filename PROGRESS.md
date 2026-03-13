@@ -1,9 +1,9 @@
 # GHL Dashboard — Build Progress
 
 ## Current Status
-- **Phase:** D (Modules) — Step 16 COMPLETE, starting Step 17
-- **Step:** 17/25 — Contacts module
-- **Next:** Build contacts page with table, detail view, notes
+- **Phase:** D (Modules) COMPLETE — Steps 16-19 done
+- **Step:** 19/25 — Phase D finished
+- **Next:** Phase E (Polish) — Steps 20-25
 - **Date:** 2026-03-13
 
 ## Completed Steps
@@ -29,13 +29,15 @@
 14. ✅ Layout shell — Sidebar (role-aware, collapsible, unread badge), Topbar (search, notification bell, user menu), MobileNav (Sheet-based), ErrorBoundary (class component with retry), GHLStatusBanner, EmptyState, LoadingSkeleton (Page/Card/Table/ConversationList/Kanban variants), Login page, Dashboard layout with SessionProvider + QueryClientProvider
 15. ✅ Onboarding wizard — 4-step flow (Connect GHL → Invite Team → Assign Roles → Done), StepIndicator component, onboardingComplete added to JWT/session, middleware redirects, API routes for invite/roles/complete
 
-### Phase D: Modules (Steps 16-19) — In Progress
-16. ✅ Comms module — AUDITED & COMPLETE
-    - API routes: `/api/ghl/conversations` (GET), `/api/ghl/conversations/[id]/messages` (GET, POST)
-    - Also created: `/api/ghl/contacts` (GET), `/api/ghl/contacts/[id]` (GET), `/api/ghl/contacts/[id]/notes` (GET, POST), `/api/ghl/pipelines` (GET), `/api/ghl/opportunities` (GET) — all with auth + permission checks + cache-aside
-    - Hooks: `src/hooks/useGHL.ts` — useConversations, useMessages, useSendMessage, useContacts, useContact, useContactNotes, usePipelines, useOpportunities
-    - UI: ConversationList, MessageThread, MessageInput, ContactSidebar, AssignDropdown, three-panel layout
-    - Audit fixes: `asChild` → `render` prop, stable useMemo deps, removed unused param
+### Phase D: Modules (Steps 16-19) ✅
+16. ✅ Comms module — three-panel layout, conversation list/thread/sidebar, message send, assign dropdown
+17. ✅ Contacts module — searchable table with source/tag filters, contact detail page with notes, add note form
+    - Components: ContactsTable, ContactsSearch, SourceFilter, ContactInfo, NotesList, AddNoteForm
+    - Added `useAddNote` mutation hook
+18. ✅ Pipeline module — Kanban board with stage columns, opportunity cards, pipeline selector, value totals
+    - Components: KanbanCard, KanbanColumn, PipelineSelector
+    - Fixed: derived state instead of useEffect setState, stable useMemo deps
+19. ✅ Dashboard home — stat cards (unread messages, contacts, deals, pipeline value), recent conversations, top opportunities
 
 ## Key Decisions
 - **Prisma v7** requires adapter pattern — using `@prisma/adapter-pg` instead of direct URL
@@ -99,3 +101,11 @@
 - ✅ Build: compiled successfully (23 routes)
 - ✅ Smoke Test: /api/health returned 200
 - ✅ Security: all 9 GHL API routes have auth + permissions + tenant scoping, tokens encrypted
+
+### Phase D Final Audit (Steps 17-19)
+- ✅ Tests: 34 passed, 0 failed
+- ✅ Type Check: 0 errors
+- ✅ Lint: 0 errors
+- ✅ Build: compiled successfully (26 routes including /contacts, /contacts/[id], /pipeline)
+- ✅ Smoke Test: /api/health returned 200
+- ✅ Security: all new pages use existing auth-protected API routes, no new API surfaces

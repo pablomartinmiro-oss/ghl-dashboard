@@ -92,6 +92,27 @@ export function useContactNotes(contactId: string | null) {
   });
 }
 
+export function useAddNote(contactId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (body: string) => {
+      const res = await fetch(`/api/ghl/contacts/${contactId}/notes`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ body }),
+      });
+      if (!res.ok) throw new Error("Failed to add note");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["contact-notes", contactId],
+      });
+    },
+  });
+}
+
 // ─── Pipelines ───────────────────────────────────────────
 
 export function usePipelines() {

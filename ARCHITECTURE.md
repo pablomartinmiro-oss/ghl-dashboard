@@ -111,11 +111,24 @@
 - `usePipelines()`, `useOpportunities(pipelineId)`
 - All use `fetchJSON<T>()` helper that throws on non-ok responses
 
-## Comms Module (Step 16 — audit pending)
+## Comms Module
 - Three-panel layout: ConversationList (left 320px) | MessageThread + MessageInput (center) | ContactSidebar (right 288px, hidden on <lg)
 - Components in `src/app/(dashboard)/comms/_components/`
-- ConversationList: search, filter tabs (All/Mine/Unassigned/Unread), relative time, unread badges
-- MessageThread: chat bubbles (inbound left, outbound right), auto-scroll, timestamps
-- MessageInput: textarea, Enter to send, Shift+Enter newline, SMS segment counter, permission-gated
-- ContactSidebar: contact info, tags, quick link to full profile
-- AssignDropdown: assign conversation to team member (permission-gated to `comms:assign`)
+- AssignDropdown uses `render` prop (base-ui), NOT `asChild` (Radix)
+
+## Contacts Module
+- List page at `/contacts` — searchable table with source filter badges
+- Detail page at `/contacts/[id]` — two-column: ContactInfo card + Notes list with AddNoteForm
+- Components in `src/app/(dashboard)/contacts/_components/` and `contacts/[id]/_components/`
+- `useAddNote(contactId)` mutation hook in `useGHL.ts`
+
+## Pipeline Module
+- Kanban board at `/pipeline` — horizontal scrolling columns per stage
+- Components in `src/app/(dashboard)/pipeline/_components/`: KanbanCard, KanbanColumn, PipelineSelector
+- Pipeline selection: derived state (not useEffect setState) — `userSelectedId ?? pipelines[0]?.id`
+- Stage columns show opportunity count badge + total value
+
+## Dashboard Home
+- Stat cards: unread messages, total contacts, open deals, pipeline value
+- Widgets: RecentConversations (top 5), TopOpportunities (top 5 by value)
+- Components in `src/app/(dashboard)/_components/`: StatCard, RecentConversations, TopOpportunities
