@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
 
+const useSecureCookies =
+  (process.env.AUTH_URL ?? process.env.NEXTAUTH_URL ?? "").startsWith(
+    "https://"
+  );
+const cookiePrefix = useSecureCookies ? "__Secure-" : "";
+const SESSION_COOKIE_NAME = `${cookiePrefix}authjs.session-token`;
+
 const PUBLIC_ROUTES = [
   "/login",
   "/api/auth",
@@ -27,9 +34,15 @@ export async function middleware(req: NextRequest) {
   }
 
   // Check JWT token (edge-compatible, no DB access)
+  // Explicitly pass cookie name to match what NextAuth sets —
+  // without this, getToken infers secure vs non-secure from the
+  // internal request protocol (HTTP behind Railway proxy), which
+  // differs from the HTTPS-based cookie name NextAuth actually writes.
   const token = await getToken({
     req,
     secret: process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET,
+    cookieName: SESSION_COOKIE_NAME,
+    secureCookie: useSecureCookies,
   });
 
   // Not authenticated → redirect to login

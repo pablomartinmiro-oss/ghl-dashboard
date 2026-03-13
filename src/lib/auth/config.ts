@@ -38,6 +38,15 @@ declare module "@auth/core/jwt" {
   }
 }
 
+const useSecureCookies =
+  (process.env.AUTH_URL ?? process.env.NEXTAUTH_URL ?? "").startsWith(
+    "https://"
+  );
+
+const cookiePrefix = useSecureCookies ? "__Secure-" : "";
+
+export const SESSION_COOKIE_NAME = `${cookiePrefix}authjs.session-token`;
+
 export const { handlers, auth, signIn, signOut } = NextAuth({
   providers: [
     Credentials({
@@ -141,6 +150,17 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   session: {
     strategy: "jwt",
     maxAge: 24 * 60 * 60, // 24 hours
+  },
+  cookies: {
+    sessionToken: {
+      name: SESSION_COOKIE_NAME,
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: useSecureCookies,
+      },
+    },
   },
   secret: process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET,
   trustHost: true,
