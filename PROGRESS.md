@@ -1,9 +1,9 @@
 # GHL Dashboard — Build Progress
 
 ## Current Status
-- **Phase:** D (Modules) COMPLETE — Steps 16-19 done
-- **Step:** 19/25 — Phase D finished
-- **Next:** Phase E (Polish) — Steps 20-25
+- **Phase:** ALL PHASES COMPLETE (A-E, Steps 1-25)
+- **Step:** 25/25 — Final audit passed
+- **Next:** Deploy to Railway, run migrations, seed demo data
 - **Date:** 2026-03-13
 
 ## Completed Steps
@@ -57,6 +57,16 @@
 - **base-ui Select `onValueChange`** passes `string | null` — must null-check before setting state
 - **ESLint `react-hooks/set-state-in-effect`**: Next.js 16 lint rule; use `useSearchParams` instead of reading `window.location.search` in useEffect
 
+### Phase E: Polish (Steps 20-25) ✅
+20. ✅ Settings page — tenant info card, GHL connection status/reconnect, team table with role management
+    - API routes: `/api/settings/tenant` (GET), `/api/settings/team` (GET), `/api/settings/team/[userId]/role` (PATCH)
+    - Hook: `useSettings.ts` — useTenantSettings, useTeam, useUpdateUserRole
+21. ✅ Team management — team table with role dropdown (permission-gated), member list
+22. ✅ GHL webhooks — `/api/ghl/webhooks` POST receiver with HMAC-SHA256 signature verification, cache invalidation by event type, WebhookLog persistence
+23. ✅ Error boundaries — `error.tsx` files for comms, contacts, pipeline, settings (per-route error UI with retry)
+24. ✅ Loading states — `loading.tsx` files with route-specific skeletons, optimistic updates for sendMessage and addNote
+25. ✅ Final audit — all checks pass, PROGRESS.md + ARCHITECTURE.md updated
+
 ## Known Issues
 - No Postgres running locally — need `docker-compose up db redis` before running migrations
 - `prisma migrate dev --name init` needs to be run before seed works
@@ -109,3 +119,11 @@
 - ✅ Build: compiled successfully (26 routes including /contacts, /contacts/[id], /pipeline)
 - ✅ Smoke Test: /api/health returned 200
 - ✅ Security: all new pages use existing auth-protected API routes, no new API surfaces
+
+### Phase E Final Audit (Steps 20-25)
+- ✅ Tests: 34 passed, 0 failed
+- ✅ Type Check: 0 errors
+- ✅ Lint: 0 errors
+- ✅ Build: compiled successfully (30 routes, 8 static pages)
+- ✅ Smoke Test: /api/health returned 200
+- ✅ Security: settings routes have auth + permissions + tenant scoping, webhook HMAC verification added

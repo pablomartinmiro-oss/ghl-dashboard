@@ -132,3 +132,27 @@
 - Stat cards: unread messages, total contacts, open deals, pipeline value
 - Widgets: RecentConversations (top 5), TopOpportunities (top 5 by value)
 - Components in `src/app/(dashboard)/_components/`: StatCard, RecentConversations, TopOpportunities
+
+## Settings Module
+- Settings page at `/settings` — tenant info, GHL connection, team management
+- API routes: `/api/settings/tenant` (GET), `/api/settings/team` (GET), `/api/settings/team/[userId]/role` (PATCH)
+- All routes require `settings:tenant` or `settings:team` permission + tenant scoping
+- Hooks in `src/hooks/useSettings.ts`: useTenantSettings, useTeam, useUpdateUserRole
+- Components in `src/app/(dashboard)/settings/_components/`: GHLConnectionCard, TenantInfoCard, TeamTable
+- Team table shows role dropdown for users with `settings:team` permission
+
+## GHL Webhooks
+- Endpoint: `POST /api/ghl/webhooks` (public, verified via HMAC-SHA256 signature)
+- Signature verification: `x-ghl-signature` header checked against `GHL_WEBHOOK_SECRET` env var
+- Events trigger cache invalidation: Contact*, Conversation*, InboundMessage, OutboundMessage, Opportunity*
+- All webhooks logged to `WebhookLog` table with status tracking (received → processed | failed)
+
+## Error Handling
+- Per-route `error.tsx` files in comms, contacts, pipeline, settings
+- ErrorBoundary class component available for component-level wrapping
+- Route-level `loading.tsx` files with module-specific skeletons
+
+## Optimistic Updates
+- `useSendMessage`: appends outbound message immediately, rolls back on error
+- `useAddNote`: prepends note immediately, rolls back on error
+- Pattern: `onMutate` (cancel + snapshot + optimistic set) → `onError` (rollback) → `onSettled` (refetch)

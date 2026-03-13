@@ -58,7 +58,49 @@ export function useSendMessage(conversationId: string) {
       if (!res.ok) throw new Error("Failed to send message");
       return res.json();
     },
-    onSuccess: () => {
+    onMutate: async (message) => {
+      await queryClient.cancelQueries({
+        queryKey: ["messages", conversationId],
+      });
+      const previous =
+        queryClient.getQueryData<GHLMessagesResponse>([
+          "messages",
+          conversationId,
+        ]);
+      // Optimistic update: append message immediately
+      if (previous) {
+        queryClient.setQueryData<GHLMessagesResponse>(
+          ["messages", conversationId],
+          {
+            ...previous,
+            messages: [
+              ...previous.messages,
+              {
+                id: `optimistic-${Date.now()}`,
+                conversationId,
+                contactId: "",
+                body: message,
+                direction: "outbound",
+                status: "sending",
+                dateAdded: new Date().toISOString(),
+                messageType: "SMS",
+              },
+            ],
+          }
+        );
+      }
+      return { previous };
+    },
+    onError: (_err, _msg, context) => {
+      // Rollback on error
+      if (context?.previous) {
+        queryClient.setQueryData(
+          ["messages", conversationId],
+          context.previous
+        );
+      }
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({
         queryKey: ["messages", conversationId],
       });
@@ -105,7 +147,42 @@ export function useAddNote(contactId: string) {
       if (!res.ok) throw new Error("Failed to add note");
       return res.json();
     },
-    onSuccess: () => {
+    onMutate: async (body) => {
+      await queryClient.cancelQueries({
+        queryKey: ["contact-notes", contactId],
+      });
+      const previous = queryClient.getQueryData<GHLNotesResponse>([
+        "contact-notes",
+        contactId,
+      ]);
+      if (previous) {
+        queryClient.setQueryData<GHLNotesResponse>(
+          ["contact-notes", contactId],
+          {
+            notes: [
+              {
+                id: `optimistic-${Date.now()}`,
+                contactId,
+                body,
+                userId: "",
+                dateAdded: new Date().toISOString(),
+              },
+              ...previous.notes,
+            ],
+          }
+        );
+      }
+      return { previous };
+    },
+    onError: (_err, _body, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(
+          ["contact-notes", contactId],
+          context.previous
+        );
+      }
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({
         queryKey: ["contact-notes", contactId],
       });
