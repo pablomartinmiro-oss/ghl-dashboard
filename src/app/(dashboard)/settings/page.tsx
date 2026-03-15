@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useEffect, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { useTenantSettings, useTeam, useUpdateUserRole } from "@/hooks/useSettings";
 import { usePermissions } from "@/hooks/usePermissions";
 import { RoleGate } from "@/components/shared/RoleGate";
@@ -8,6 +9,22 @@ import { GHLConnectionCard } from "./_components/GHLConnectionCard";
 import { TenantInfoCard } from "./_components/TenantInfoCard";
 import { TeamTable } from "./_components/TeamTable";
 import { toast } from "sonner";
+
+function SettingsToast() {
+  const searchParams = useSearchParams();
+  useEffect(() => {
+    if (searchParams.get("ghl_connected") === "true") {
+      toast.success("GoHighLevel connected successfully");
+      // Clean up URL
+      window.history.replaceState({}, "", "/settings");
+    }
+    if (searchParams.get("error") === "oauth_failed") {
+      toast.error("Failed to connect GoHighLevel. Please try again.");
+      window.history.replaceState({}, "", "/settings");
+    }
+  }, [searchParams]);
+  return null;
+}
 
 export default function SettingsPage() {
   const { can } = usePermissions();
@@ -31,9 +48,12 @@ export default function SettingsPage() {
 
   return (
     <div className="space-y-6">
+      <Suspense>
+        <SettingsToast />
+      </Suspense>
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Settings</h1>
-        <p className="text-sm text-muted-foreground">
+        <h1 className="text-2xl font-bold tracking-tight text-text-primary">Settings</h1>
+        <p className="text-sm text-text-secondary">
           Manage your account and team
         </p>
       </div>

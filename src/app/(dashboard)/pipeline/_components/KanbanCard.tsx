@@ -1,6 +1,6 @@
 "use client";
 
-import { DollarSign, User } from "lucide-react";
+import { User } from "lucide-react";
 import type { GHLOpportunity } from "@/lib/ghl/types";
 
 interface KanbanCardProps {
@@ -16,34 +16,24 @@ function formatCurrency(value: number): string {
   }).format(value);
 }
 
-function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-  });
-}
-
 export function KanbanCard({ opportunity }: KanbanCardProps) {
   return (
-    <div className="rounded-lg border border-border bg-white p-3 shadow-sm transition-shadow hover:shadow-md">
-      <p className="mb-2 text-sm font-medium leading-tight">
+    <div className="rounded-lg border border-border/50 bg-surface p-3 transition-shadow hover:shadow-[0_2px_6px_rgba(0,0,0,0.08)]">
+      <p className="mb-1 text-sm font-medium leading-tight text-text-primary">
         {opportunity.name}
       </p>
       <div className="flex items-center justify-between">
-        <span className="flex items-center gap-1 text-xs font-semibold text-emerald-600">
-          <DollarSign className="h-3 w-3" />
+        <span className="text-xs font-bold text-success">
           {formatCurrency(opportunity.monetaryValue)}
         </span>
-        <span className="text-[10px] text-muted-foreground">
-          {formatDate(opportunity.createdAt)}
-        </span>
+        {opportunity.assignedTo && (
+          <div className="flex items-center gap-1 text-[10px] text-text-secondary">
+            <User className="h-3 w-3" />
+            Assigned
+          </div>
+        )}
       </div>
-      {opportunity.assignedTo && (
-        <div className="mt-2 flex items-center gap-1 text-[10px] text-muted-foreground">
-          <User className="h-3 w-3" />
-          Assigned
-        </div>
-      )}
+      <p className="mt-1.5 text-[10px] text-text-secondary">{opportunity.status}</p>
     </div>
   );
 }

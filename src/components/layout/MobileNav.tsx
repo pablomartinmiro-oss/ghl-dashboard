@@ -59,10 +59,10 @@ export function MobileNav() {
       >
         <Menu className="h-5 w-5" />
       </SheetTrigger>
-      <SheetContent side="left" className="w-64 bg-slate-900 p-0">
+      <SheetContent side="left" className="w-64 bg-sidebar-bg p-0">
         <SheetTitle className="sr-only">Navigation menu</SheetTitle>
-        <div className="flex h-14 items-center border-b border-slate-800 px-4">
-          <span className="text-lg font-semibold text-white">Dashboard</span>
+        <div className="flex h-14 items-center border-b border-border px-4">
+          <span className="text-lg font-semibold text-text-primary">CRM Dashboard</span>
         </div>
         <nav className="space-y-1 px-2 py-3">
           {visibleItems.map((item) => {
@@ -78,10 +78,10 @@ export function MobileNav() {
                 href={item.href}
                 onClick={() => setOpen(false)}
                 className={cn(
-                  "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
+                  "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
                   isActive
-                    ? "bg-slate-800 text-white"
-                    : "text-slate-400 hover:bg-slate-800/50 hover:text-white"
+                    ? "bg-cyan-light text-cyan"
+                    : "text-text-secondary hover:bg-cyan-light/50 hover:text-cyan"
                 )}
               >
                 <Icon className="h-5 w-5" />

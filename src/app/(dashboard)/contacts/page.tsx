@@ -43,8 +43,11 @@ export default function ContactsPage() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold tracking-tight">Contacts</h1>
-        <span className="text-sm text-muted-foreground">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-text-primary">Contacts</h1>
+          <p className="text-sm text-text-secondary">Manage your contact database</p>
+        </div>
+        <span className="text-sm text-text-secondary">
           {filtered.length} of {contacts.length} contacts
         </span>
       </div>
@@ -73,7 +76,7 @@ export default function ContactsPage() {
           }
         />
       ) : (
-        <div className="rounded-lg border border-border bg-white">
+        <div className="overflow-hidden rounded-[14px] bg-white shadow-[0_1px_3px_rgba(0,0,0,0.08)]">
           <ContactsTable contacts={filtered} />
         </div>
       )}

@@ -1,6 +1,5 @@
 "use client";
 
-import { Badge } from "@/components/ui/badge";
 import type { GHLPipeline } from "@/lib/ghl/types";
 
 interface PipelineSelectorProps {
@@ -19,10 +18,17 @@ export function PipelineSelector({
   return (
     <div className="flex gap-2">
       {pipelines.map((p) => (
-        <button key={p.id} onClick={() => onSelect(p.id)} type="button">
-          <Badge variant={p.id === selectedId ? "default" : "outline"}>
-            {p.name}
-          </Badge>
+        <button
+          key={p.id}
+          onClick={() => onSelect(p.id)}
+          type="button"
+          className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
+            p.id === selectedId
+              ? "bg-cyan-light text-cyan"
+              : "bg-muted text-text-secondary hover:bg-cyan-light/50 hover:text-cyan"
+          }`}
+        >
+          {p.name}
         </button>
       ))}
     </div>

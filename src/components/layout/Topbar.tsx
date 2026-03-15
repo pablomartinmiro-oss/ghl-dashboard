@@ -35,10 +35,10 @@ export function Topbar({ unreadCount = 0, onNotificationClick }: TopbarProps) {
     <header className="flex h-14 items-center gap-4 border-b border-border bg-white px-6">
       {/* Search */}
       <div className="relative max-w-md flex-1">
-        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-secondary" />
         <Input
           placeholder="Search contacts, conversations..."
-          className="h-9 pl-9 text-sm"
+          className="h-9 rounded-lg border-border bg-surface pl-9 text-sm placeholder:text-text-secondary"
         />
       </div>
 
@@ -46,14 +46,14 @@ export function Topbar({ unreadCount = 0, onNotificationClick }: TopbarProps) {
         {/* Notification Bell */}
         <button
           onClick={onNotificationClick}
-          className="relative rounded-md p-2 text-muted-foreground hover:bg-accent hover:text-foreground"
+          className="relative rounded-lg p-2 text-text-secondary hover:bg-muted hover:text-text-primary"
           aria-label="Notifications"
         >
           <Bell className="h-5 w-5" />
           {unreadCount > 0 && (
             <Badge
               variant="destructive"
-              className="absolute -right-0.5 -top-0.5 h-4 min-w-4 justify-center px-1 text-[10px]"
+              className="absolute -right-0.5 -top-0.5 h-4 min-w-4 justify-center rounded-full px-1 text-[10px]"
             >
               {unreadCount > 99 ? "99+" : unreadCount}
             </Badge>
@@ -62,29 +62,29 @@ export function Topbar({ unreadCount = 0, onNotificationClick }: TopbarProps) {
 
         {/* User Menu */}
         <DropdownMenu>
-          <DropdownMenuTrigger className="flex items-center gap-2 rounded-md p-1 hover:bg-accent">
+          <DropdownMenuTrigger className="flex items-center gap-2 rounded-lg p-1 hover:bg-muted">
             <Avatar className="h-8 w-8">
-              <AvatarFallback className="bg-primary text-xs text-primary-foreground">
+              <AvatarFallback className="bg-cyan-light text-xs font-semibold text-cyan">
                 {initials}
               </AvatarFallback>
             </Avatar>
             <div className="hidden text-left md:block">
-              <p className="text-sm font-medium leading-none">
+              <p className="text-sm font-medium leading-none text-text-primary">
                 {user?.name ?? "User"}
               </p>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-text-secondary">
                 {user?.roleName ?? ""}
               </p>
             </div>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-48">
-            <DropdownMenuItem className="gap-2">
+          <DropdownMenuContent align="end" className="w-48 rounded-xl">
+            <DropdownMenuItem className="gap-2 rounded-lg">
               <User className="h-4 w-4" />
               Profile
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem
-              className="gap-2 text-destructive"
+              className="gap-2 rounded-lg text-danger"
               onClick={() => signOut({ callbackUrl: "/login" })}
             >
               <LogOut className="h-4 w-4" />

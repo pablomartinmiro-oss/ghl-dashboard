@@ -2,13 +2,6 @@
 
 import Link from "next/link";
 import { DollarSign } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { GHLOpportunity } from "@/lib/ghl/types";
 
@@ -35,21 +28,18 @@ export function TopOpportunities({
     .slice(0, 5);
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle className="text-base">Top Opportunities</CardTitle>
-        <Link
-          href="/pipeline"
-          className="text-xs text-muted-foreground hover:underline"
-        >
+    <div className="rounded-[14px] bg-white p-5 shadow-[0_1px_3px_rgba(0,0,0,0.08)]">
+      <div className="mb-4 flex items-center justify-between">
+        <h2 className="text-base font-semibold text-text-primary">Top Opportunities</h2>
+        <Link href="/pipeline" className="text-xs text-cyan hover:underline">
           View all
         </Link>
-      </CardHeader>
-      <CardContent className="space-y-3">
+      </div>
+      <div className="space-y-3">
         {loading ? (
           Array.from({ length: 5 }).map((_, i) => (
             <div key={i} className="flex items-center gap-3">
-              <Skeleton className="h-8 w-8 rounded" />
+              <Skeleton className="h-9 w-9 rounded-lg" />
               <div className="flex-1 space-y-1">
                 <Skeleton className="h-4 w-40" />
                 <Skeleton className="h-3 w-20" />
@@ -57,33 +47,36 @@ export function TopOpportunities({
             </div>
           ))
         ) : sorted.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No opportunities yet</p>
+          <p className="py-6 text-center text-sm text-text-secondary">No opportunities yet</p>
         ) : (
           sorted.map((opp) => (
             <Link
               key={opp.id}
               href="/pipeline"
-              className="flex items-center gap-3 rounded-md p-1.5 transition-colors hover:bg-muted/50"
+              className="flex items-center gap-3 rounded-lg p-2 transition-colors hover:bg-muted"
             >
-              <div className="flex h-8 w-8 items-center justify-center rounded bg-emerald-50">
-                <DollarSign className="h-4 w-4 text-emerald-600" />
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-success/10">
+                <DollarSign className="h-4 w-4 text-success" />
               </div>
               <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium">{opp.name}</p>
-                <p className="text-xs font-semibold text-emerald-600">
+                <p className="truncate text-sm font-medium text-text-primary">{opp.name}</p>
+                <p className="text-xs font-semibold text-success">
                   {formatCurrency(opp.monetaryValue)}
                 </p>
               </div>
-              <Badge
-                variant={opp.status === "won" ? "default" : "secondary"}
-                className="text-[10px]"
-              >
+              <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                opp.status === "won"
+                  ? "bg-success/10 text-success"
+                  : opp.status === "open"
+                    ? "bg-cyan-light text-cyan"
+                    : "bg-muted text-text-secondary"
+              }`}>
                 {opp.status}
-              </Badge>
+              </span>
             </Link>
           ))
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

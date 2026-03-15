@@ -49,7 +49,7 @@ export default function DashboardLayout({
 
             <GHLStatusBanner />
 
-            <main className="flex-1 overflow-auto bg-slate-50 p-6">
+            <main className="flex-1 overflow-auto bg-surface p-6">
               <ErrorBoundary>{children}</ErrorBoundary>
             </main>
           </div>

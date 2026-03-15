@@ -81,19 +81,19 @@ export function Sidebar({ unreadCount = 0 }: SidebarProps) {
   return (
     <aside
       className={cn(
-        "flex h-screen flex-col border-r border-border bg-slate-900 text-slate-300 transition-all duration-200",
-        collapsed ? "w-16" : "w-60"
+        "flex h-screen flex-col border-r border-border bg-sidebar-bg transition-all duration-200",
+        collapsed ? "w-16" : "w-[220px]"
       )}
     >
       {/* Logo */}
-      <div className="flex h-14 items-center border-b border-slate-800 px-4">
+      <div className="flex h-14 items-center border-b border-border px-4">
         {!collapsed && (
-          <span className="text-lg font-semibold text-white">Dashboard</span>
+          <span className="text-lg font-semibold text-text-primary">CRM Dashboard</span>
         )}
         <button
           onClick={() => setCollapsed(!collapsed)}
           className={cn(
-            "rounded-md p-1.5 text-slate-400 hover:bg-slate-800 hover:text-white",
+            "rounded-lg p-1.5 text-text-secondary hover:bg-cyan-light hover:text-cyan",
             collapsed ? "mx-auto" : "ml-auto"
           )}
           aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
@@ -122,10 +122,10 @@ export function Sidebar({ unreadCount = 0 }: SidebarProps) {
               key={item.href}
               href={item.href}
               className={cn(
-                "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
+                "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
                 isActive
-                  ? "bg-slate-800 text-white"
-                  : "text-slate-400 hover:bg-slate-800/50 hover:text-white",
+                  ? "bg-cyan-light text-cyan"
+                  : "text-text-secondary hover:bg-cyan-light/50 hover:text-cyan",
                 collapsed && "justify-center px-2"
               )}
               title={collapsed ? item.label : undefined}
@@ -137,7 +137,7 @@ export function Sidebar({ unreadCount = 0 }: SidebarProps) {
                   {showBadge && (
                     <Badge
                       variant="destructive"
-                      className="h-5 min-w-5 justify-center px-1 text-xs"
+                      className="h-5 min-w-5 justify-center rounded-full px-1 text-xs"
                     >
                       {unreadCount > 99 ? "99+" : unreadCount}
                     </Badge>
@@ -152,10 +152,10 @@ export function Sidebar({ unreadCount = 0 }: SidebarProps) {
         })}
       </nav>
 
-      {/* Collapse indicator */}
-      <div className="border-t border-slate-800 p-3">
+      {/* Footer */}
+      <div className="border-t border-border p-3">
         {!collapsed && (
-          <p className="truncate text-xs text-slate-500">GHL Dashboard v0.1</p>
+          <p className="truncate text-xs text-text-secondary">GHL Dashboard v0.1</p>
         )}
       </div>
     </aside>

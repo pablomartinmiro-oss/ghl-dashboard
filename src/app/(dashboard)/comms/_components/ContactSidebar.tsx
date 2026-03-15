@@ -38,43 +38,43 @@ export function ContactSidebar({ contact, loading }: ContactSidebarProps) {
     <div className="w-72 overflow-y-auto border-l border-border bg-white p-4">
       {/* Contact header */}
       <div className="mb-4">
-        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-lg font-medium text-primary">
+        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-purple-light text-lg font-semibold text-purple">
           {contact.firstName[0]}
           {contact.lastName[0]}
         </div>
-        <h3 className="mt-2 text-sm font-semibold">{fullName}</h3>
+        <h3 className="mt-2 text-sm font-semibold text-text-primary">{fullName}</h3>
       </div>
 
       {/* Contact info */}
       <div className="space-y-3">
         {contact.phone && (
           <div>
-            <p className="text-xs font-medium text-muted-foreground">Phone</p>
-            <p className="text-sm">{contact.phone}</p>
+            <p className="text-xs font-medium text-text-secondary">Phone</p>
+            <p className="text-sm text-text-primary">{contact.phone}</p>
           </div>
         )}
         {contact.email && (
           <div>
-            <p className="text-xs font-medium text-muted-foreground">Email</p>
-            <p className="text-sm">{contact.email}</p>
+            <p className="text-xs font-medium text-text-secondary">Email</p>
+            <p className="text-sm text-text-primary">{contact.email}</p>
           </div>
         )}
         {contact.source && (
           <div>
-            <p className="text-xs font-medium text-muted-foreground">Source</p>
-            <p className="text-sm">{contact.source}</p>
+            <p className="text-xs font-medium text-text-secondary">Source</p>
+            <p className="text-sm text-text-primary">{contact.source}</p>
           </div>
         )}
 
         {/* Tags */}
         {contact.tags.length > 0 && (
           <div>
-            <p className="mb-1 text-xs font-medium text-muted-foreground">
+            <p className="mb-1 text-xs font-medium text-text-secondary">
               Tags
             </p>
             <div className="flex flex-wrap gap-1">
               {contact.tags.map((tag) => (
-                <Badge key={tag} variant="secondary" className="text-xs">
+                <Badge key={tag} variant="secondary" className="rounded-full bg-muted text-xs text-text-secondary">
                   {tag}
                 </Badge>
               ))}
@@ -87,7 +87,7 @@ export function ContactSidebar({ contact, loading }: ContactSidebarProps) {
       <div className="mt-4 space-y-2 border-t border-border pt-4">
         <Link
           href={`/contacts/${contact.id}`}
-          className="flex items-center gap-2 text-xs font-medium text-primary hover:underline"
+          className="flex items-center gap-2 text-xs font-medium text-cyan hover:underline"
         >
           <ExternalLink className="h-3 w-3" />
           View full profile

@@ -54,7 +54,7 @@ export function TeamTable({
   if (loading) return <TableSkeleton rows={4} />;
 
   return (
-    <div className="rounded-lg border border-border bg-white">
+    <div className="overflow-hidden rounded-[14px] bg-white shadow-[0_1px_3px_rgba(0,0,0,0.08)]">
       <Table>
         <TableHeader>
           <TableRow>
@@ -71,7 +71,7 @@ export function TeamTable({
               <TableCell className="font-medium">
                 {user.name ?? "—"}
               </TableCell>
-              <TableCell className="text-muted-foreground">
+              <TableCell className="text-text-secondary">
                 {user.email}
               </TableCell>
               <TableCell>
@@ -96,7 +96,7 @@ export function TeamTable({
                   {user.isActive ? "Active" : "Inactive"}
                 </Badge>
               </TableCell>
-              <TableCell className="text-muted-foreground">
+              <TableCell className="text-text-secondary">
                 {formatDate(user.lastLoginAt)}
               </TableCell>
             </TableRow>

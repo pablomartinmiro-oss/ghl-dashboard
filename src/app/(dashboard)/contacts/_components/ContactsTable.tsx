@@ -45,33 +45,33 @@ export function ContactsTable({ contacts }: ContactsTableProps) {
             <TableCell>
               <Link
                 href={`/contacts/${contact.id}`}
-                className="font-medium text-foreground hover:underline"
+                className="font-medium text-text-primary hover:text-cyan hover:underline"
               >
                 {contact.firstName} {contact.lastName}
               </Link>
             </TableCell>
             <TableCell>
               {contact.email ? (
-                <span className="flex items-center gap-1.5 text-muted-foreground">
+                <span className="flex items-center gap-1.5 text-text-secondary">
                   <Mail className="h-3.5 w-3.5" />
                   {contact.email}
                 </span>
               ) : (
-                <span className="text-muted-foreground">—</span>
+                <span className="text-text-secondary">—</span>
               )}
             </TableCell>
             <TableCell>
               {contact.phone ? (
-                <span className="flex items-center gap-1.5 text-muted-foreground">
+                <span className="flex items-center gap-1.5 text-text-secondary">
                   <Phone className="h-3.5 w-3.5" />
                   {contact.phone}
                 </span>
               ) : (
-                <span className="text-muted-foreground">—</span>
+                <span className="text-text-secondary">—</span>
               )}
             </TableCell>
             <TableCell>
-              <span className="text-muted-foreground">
+              <span className="text-text-secondary">
                 {contact.source ?? "—"}
               </span>
             </TableCell>
@@ -89,7 +89,7 @@ export function ContactsTable({ contacts }: ContactsTableProps) {
                 )}
               </div>
             </TableCell>
-            <TableCell className="text-muted-foreground">
+            <TableCell className="text-text-secondary">
               {formatDate(contact.dateAdded)}
             </TableCell>
           </TableRow>

@@ -1,11 +1,5 @@
 "use client";
 
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface StatCardProps {
@@ -14,6 +8,8 @@ interface StatCardProps {
   description?: string;
   icon: React.ElementType;
   loading?: boolean;
+  iconColor?: string;
+  iconBg?: string;
 }
 
 export function StatCard({
@@ -22,29 +18,27 @@ export function StatCard({
   description,
   icon: Icon,
   loading,
+  iconColor = "text-cyan",
+  iconBg = "bg-cyan-light",
 }: StatCardProps) {
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <CardTitle className="text-sm font-medium text-muted-foreground">
-          {title}
-        </CardTitle>
-        <Icon className="h-4 w-4 text-muted-foreground" />
-      </CardHeader>
-      <CardContent>
-        {loading ? (
-          <Skeleton className="h-8 w-24" />
-        ) : (
-          <>
-            <p className="text-2xl font-bold">{value}</p>
-            {description && (
-              <p className="mt-1 text-xs text-muted-foreground">
-                {description}
-              </p>
-            )}
-          </>
-        )}
-      </CardContent>
-    </Card>
+    <div className="rounded-[14px] bg-white p-5 shadow-[0_1px_3px_rgba(0,0,0,0.08)]">
+      <div className="flex items-center gap-4">
+        <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full ${iconBg}`}>
+          <Icon className={`h-5 w-5 ${iconColor}`} />
+        </div>
+        <div className="min-w-0">
+          <p className="text-xs font-medium text-text-secondary">{title}</p>
+          {loading ? (
+            <Skeleton className="mt-1 h-7 w-20" />
+          ) : (
+            <p className="text-2xl font-bold text-text-primary">{value}</p>
+          )}
+          {!loading && description && (
+            <p className="mt-0.5 text-xs text-text-secondary">{description}</p>
+          )}
+        </div>
+      </div>
+    </div>
   );
 }

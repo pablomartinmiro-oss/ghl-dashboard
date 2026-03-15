@@ -1,7 +1,5 @@
 "use client";
 
-import { Badge } from "@/components/ui/badge";
-
 interface SourceFilterProps {
   sources: string[];
   selected: string | null;
@@ -14,18 +12,26 @@ export function SourceFilter({ sources, selected, onSelect }: SourceFilterProps)
       <button
         onClick={() => onSelect(null)}
         type="button"
+        className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
+          selected === null
+            ? "bg-cyan-light text-cyan"
+            : "bg-muted text-text-secondary hover:bg-cyan-light/50"
+        }`}
       >
-        <Badge variant={selected === null ? "default" : "outline"}>All</Badge>
+        All
       </button>
       {sources.map((source) => (
         <button
           key={source}
           onClick={() => onSelect(source === selected ? null : source)}
           type="button"
+          className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
+            source === selected
+              ? "bg-cyan-light text-cyan"
+              : "bg-muted text-text-secondary hover:bg-cyan-light/50"
+          }`}
         >
-          <Badge variant={source === selected ? "default" : "outline"}>
-            {source}
-          </Badge>
+          {source}
         </button>
       ))}
     </div>

@@ -62,12 +62,12 @@ export function ConversationList({
       {/* Search */}
       <div className="p-3">
         <div className="relative">
-          <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-text-secondary" />
           <Input
             placeholder="Search conversations..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="h-8 pl-8 text-sm"
+            className="h-8 rounded-lg border-border bg-surface pl-8 text-sm placeholder:text-text-secondary"
           />
         </div>
       </div>
@@ -80,7 +80,7 @@ export function ConversationList({
         {loading ? (
           <ConversationListSkeleton />
         ) : filtered.length === 0 ? (
-          <p className="p-4 text-center text-sm text-muted-foreground">
+          <p className="p-4 text-center text-sm text-text-secondary">
             No conversations found
           </p>
         ) : (
@@ -89,11 +89,11 @@ export function ConversationList({
               key={conv.id}
               onClick={() => onSelect(conv.id)}
               className={cn(
-                "flex w-full items-start gap-3 border-b border-border p-3 text-left transition-colors hover:bg-accent/50",
-                selectedId === conv.id && "bg-accent"
+                "flex w-full items-start gap-3 border-b border-border/50 p-3 text-left transition-colors hover:bg-cyan-light/30",
+                selectedId === conv.id && "bg-cyan-light/50 border-l-2 border-l-cyan"
               )}
             >
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-medium text-primary">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-cyan-light text-sm font-semibold text-cyan">
                 {conv.contactName
                   .split(" ")
                   .map((n) => n[0])
@@ -102,21 +102,21 @@ export function ConversationList({
               </div>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center justify-between">
-                  <p className="truncate text-sm font-medium">
+                  <p className="truncate text-sm font-medium text-text-primary">
                     {conv.contactName}
                   </p>
-                  <span className="shrink-0 text-xs text-muted-foreground">
+                  <span className="shrink-0 text-xs text-text-secondary">
                     {formatRelativeTime(conv.lastMessageDate)}
                   </span>
                 </div>
-                <p className="truncate text-xs text-muted-foreground">
+                <p className="truncate text-xs text-text-secondary">
                   {conv.lastMessageBody}
                 </p>
               </div>
               {conv.unreadCount > 0 && (
                 <Badge
                   variant="destructive"
-                  className="h-5 min-w-5 justify-center px-1 text-xs"
+                  className="h-5 min-w-5 justify-center rounded-full px-1 text-xs"
                 >
                   {conv.unreadCount}
                 </Badge>

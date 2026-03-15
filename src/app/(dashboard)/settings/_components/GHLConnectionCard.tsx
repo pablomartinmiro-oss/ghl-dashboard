@@ -1,15 +1,7 @@
 "use client";
 
 import { CheckCircle, XCircle, RefreshCw } from "lucide-react";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface GHLConnectionCardProps {
@@ -42,79 +34,73 @@ export function GHLConnectionCard({
 
   if (loading) {
     return (
-      <Card>
-        <CardHeader>
-          <Skeleton className="h-5 w-40" />
-          <Skeleton className="h-4 w-64" />
-        </CardHeader>
-        <CardContent>
-          <Skeleton className="h-20 w-full" />
-        </CardContent>
-      </Card>
+      <div className="rounded-[14px] bg-white p-5 shadow-[0_1px_3px_rgba(0,0,0,0.08)]">
+        <Skeleton className="h-5 w-40" />
+        <Skeleton className="mt-1 h-4 w-64" />
+        <Skeleton className="mt-4 h-20 w-full" />
+      </div>
     );
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle>GHL Connection</CardTitle>
-          <Badge variant={isConnected ? "default" : "destructive"}>
-            {isConnected ? "Connected" : "Not Connected"}
-          </Badge>
-        </div>
-        <CardDescription>
-          Manage your GoHighLevel integration
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {isConnected ? (
-          <>
-            <div className="grid gap-3 text-sm">
-              <div className="flex items-center gap-2">
-                <CheckCircle className="h-4 w-4 text-emerald-500" />
-                <span>Location ID: {ghlLocationId}</span>
-              </div>
-              {ghlConnectedAt && (
-                <div className="text-muted-foreground">
-                  Connected {formatDate(ghlConnectedAt)}
-                </div>
-              )}
-              {ghlTokenExpiry && (
-                <div className="flex items-center gap-2">
-                  {isTokenExpired ? (
-                    <XCircle className="h-4 w-4 text-destructive" />
-                  ) : (
-                    <CheckCircle className="h-4 w-4 text-emerald-500" />
-                  )}
-                  <span>
-                    Token {isTokenExpired ? "expired" : "expires"}{" "}
-                    {formatDate(ghlTokenExpiry)}
-                  </span>
-                </div>
-              )}
+    <div className="rounded-[14px] bg-white p-5 shadow-[0_1px_3px_rgba(0,0,0,0.08)]">
+      <div className="mb-4 flex items-center justify-between">
+        <h3 className="text-base font-semibold text-text-primary">GHL Connection</h3>
+        <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
+          isConnected ? "bg-success/10 text-success" : "bg-danger/10 text-danger"
+        }`}>
+          {isConnected ? "Connected" : "Not Connected"}
+        </span>
+      </div>
+      <p className="mb-4 text-sm text-text-secondary">Manage your GoHighLevel integration</p>
+      {isConnected ? (
+        <div className="space-y-4">
+          <div className="grid gap-3 text-sm">
+            <div className="flex items-center gap-2">
+              <CheckCircle className="h-4 w-4 text-success" />
+              <span className="text-text-primary">Location ID: {ghlLocationId}</span>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                window.location.href = "/api/crm/oauth/authorize";
-              }}
-            >
-              <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
-              Reconnect
-            </Button>
-          </>
-        ) : (
+            {ghlConnectedAt && (
+              <div className="text-text-secondary">
+                Connected {formatDate(ghlConnectedAt)}
+              </div>
+            )}
+            {ghlTokenExpiry && (
+              <div className="flex items-center gap-2">
+                {isTokenExpired ? (
+                  <XCircle className="h-4 w-4 text-danger" />
+                ) : (
+                  <CheckCircle className="h-4 w-4 text-success" />
+                )}
+                <span className="text-text-primary">
+                  Token {isTokenExpired ? "expired" : "expires"}{" "}
+                  {formatDate(ghlTokenExpiry)}
+                </span>
+              </div>
+            )}
+          </div>
           <Button
+            variant="outline"
+            size="sm"
+            className="rounded-lg"
             onClick={() => {
               window.location.href = "/api/crm/oauth/authorize";
             }}
           >
-            Connect GoHighLevel
+            <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
+            Reconnect
           </Button>
-        )}
-      </CardContent>
-    </Card>
+        </div>
+      ) : (
+        <Button
+          className="rounded-lg bg-cyan text-white hover:bg-cyan/90"
+          onClick={() => {
+            window.location.href = "/api/crm/oauth/authorize";
+          }}
+        >
+          Connect GoHighLevel
+        </Button>
+      )}
+    </div>
   );
 }

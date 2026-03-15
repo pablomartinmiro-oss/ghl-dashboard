@@ -52,9 +52,12 @@ export default function PipelinePage() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold tracking-tight">Pipeline</h1>
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-text-primary">Pipeline</h1>
+          <p className="text-sm text-text-secondary">Manage your deals across stages</p>
+        </div>
         {!loading && (
-          <span className="text-sm text-muted-foreground">
+          <span className="text-sm text-text-secondary">
             {opportunities.length} deals &middot;{" "}
             {new Intl.NumberFormat("en-US", {
               style: "currency",

@@ -70,10 +70,10 @@ export default function CommsPage() {
 
       {/* Center panel: Message thread */}
       {selectedId ? (
-        <div className="flex flex-1 flex-col bg-white">
+        <div className="flex flex-1 flex-col">
           {/* Thread header */}
-          <div className="flex items-center justify-between border-b border-border px-4 py-2.5">
-            <h2 className="text-sm font-semibold">
+          <div className="flex items-center justify-between border-b border-border bg-white px-4 py-2.5">
+            <h2 className="text-sm font-semibold text-text-primary">
               {selectedConvo?.contactName ?? "Conversation"}
             </h2>
             {can("comms:assign") && (
@@ -95,7 +95,7 @@ export default function CommsPage() {
           />
         </div>
       ) : (
-        <div className="flex flex-1 items-center justify-center bg-white">
+        <div className="flex flex-1 items-center justify-center bg-surface">
           <EmptyState
             icon={MessageSquare}
             title="Select a conversation"
