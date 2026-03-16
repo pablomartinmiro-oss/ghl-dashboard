@@ -1,13 +1,16 @@
 "use client";
 
-import { useMemo, useEffect, Suspense } from "react";
+import { useMemo, useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-import { useTenantSettings, useTeam, useUpdateUserRole } from "@/hooks/useSettings";
+import { useTenantSettings, useTeam, useUpdateUserRole, useUpdateDataMode, useInviteTeamMember } from "@/hooks/useSettings";
 import { usePermissions } from "@/hooks/usePermissions";
 import { RoleGate } from "@/components/shared/RoleGate";
 import { GHLConnectionCard } from "./_components/GHLConnectionCard";
 import { TenantInfoCard } from "./_components/TenantInfoCard";
 import { TeamTable } from "./_components/TeamTable";
+import { DataModeCard } from "./_components/DataModeCard";
+import { TeamInviteCard } from "./_components/TeamInviteCard";
+import { GrouponMappingCard } from "./_components/GrouponMappingCard";
 import { toast } from "sonner";
 
 function SettingsToast() {
@@ -31,6 +34,9 @@ export default function SettingsPage() {
   const { data: tenantData, isLoading: tenantLoading } = useTenantSettings();
   const { data: teamData, isLoading: teamLoading } = useTeam();
   const updateRole = useUpdateUserRole();
+  const updateDataMode = useUpdateDataMode();
+  const inviteMember = useInviteTeamMember();
+  const [inviteUrl, setInviteUrl] = useState<string | null>(null);
 
   const tenant = tenantData?.tenant;
   const users = useMemo(() => teamData?.users ?? [], [teamData]);
@@ -46,6 +52,23 @@ export default function SettingsPage() {
     );
   }
 
+  function handleDataModeChange(mode: "mock" | "live") {
+    updateDataMode.mutate(mode, {
+      onSuccess: () => toast.success(mode === "live" ? "Modo real activado" : "Modo demo activado"),
+      onError: (err) => toast.error(err.message),
+    });
+  }
+
+  function handleInvite(email: string) {
+    inviteMember.mutate(email, {
+      onSuccess: (data) => {
+        setInviteUrl(data.inviteUrl);
+        toast.success("Invitación creada");
+      },
+      onError: (err) => toast.error(err.message),
+    });
+  }
+
   return (
     <div className="space-y-6">
       <Suspense>
@@ -59,6 +82,15 @@ export default function SettingsPage() {
       </div>
 
       <RoleGate permission="settings:tenant">
+        {/* Data Mode Toggle — prominent, at top */}
+        <DataModeCard
+          dataMode={(tenant?.dataMode as "mock" | "live") ?? "mock"}
+          ghlConnected={!!tenant?.ghlLocationId}
+          loading={tenantLoading}
+          onToggle={handleDataModeChange}
+          isPending={updateDataMode.isPending}
+        />
+
         <div className="grid gap-6 lg:grid-cols-2">
           <TenantInfoCard
             name={tenant?.name ?? ""}
@@ -75,6 +107,10 @@ export default function SettingsPage() {
         </div>
       </RoleGate>
 
+      <RoleGate permission="settings:tenant">
+        <GrouponMappingCard />
+      </RoleGate>
+
       <RoleGate permission="settings:team">
         <div className="space-y-4">
           <div className="flex items-center justify-between">
@@ -83,6 +119,14 @@ export default function SettingsPage() {
               {users.length} miembros
             </span>
           </div>
+
+          {/* Team Invite */}
+          <TeamInviteCard
+            onInvite={handleInvite}
+            isPending={inviteMember.isPending}
+            inviteUrl={inviteUrl}
+          />
+
           <TeamTable
             users={users}
             roles={roles}

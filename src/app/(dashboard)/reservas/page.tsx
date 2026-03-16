@@ -6,6 +6,7 @@ import { StatsBar } from "./_components/StatsBar";
 import { ReservationList } from "./_components/ReservationList";
 import { ReservationForm } from "./_components/ReservationForm";
 import { WeeklyStats } from "./_components/WeeklyStats";
+import { VoucherStats } from "./_components/VoucherStats";
 
 export default function ReservasPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -22,6 +23,9 @@ export default function ReservasPage() {
     <div className="flex h-[calc(100vh-5rem)] flex-col gap-4">
       {/* Live stats bar */}
       <StatsBar stats={stats} loading={statsLoading} />
+
+      {/* Voucher tracking widget */}
+      <VoucherStats />
 
       {/* Main two-panel layout */}
       <div className="flex min-h-0 flex-1 gap-4">

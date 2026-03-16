@@ -6,6 +6,8 @@ import { CheckCircle, XCircle, Plus, Trash2, AlertTriangle } from "lucide-react"
 import { toast } from "sonner";
 import { useCreateReservation, useCapacity, type Reservation, type Participant } from "@/hooks/useReservations";
 import { STATIONS, SCHEDULES, LANGUAGES, formatEUR } from "./constants";
+import { VoucherSection } from "./VoucherSection";
+import type { VoucherData } from "@/hooks/useVoucher";
 
 type FormMode = "individual" | "grupal";
 type Source = "groupon" | "caja" | "presupuesto";
@@ -26,6 +28,13 @@ interface FormData {
   paymentRef: string;
   notes: string;
   internalNotes: string;
+  // Voucher fields
+  voucherSecurityCode: string;
+  voucherCouponCode: string;
+  voucherProduct: string;
+  voucherPricePaid: string;
+  voucherExpiry: string;
+  voucherRedeemed: boolean;
 }
 
 const EMPTY_FORM: FormData = {
@@ -43,6 +52,12 @@ const EMPTY_FORM: FormData = {
   paymentRef: "",
   notes: "",
   internalNotes: "",
+  voucherSecurityCode: "",
+  voucherCouponCode: "",
+  voucherProduct: "",
+  voucherPricePaid: "",
+  voucherExpiry: "",
+  voucherRedeemed: false,
 };
 
 const EMPTY_PARTICIPANT: Participant = {
@@ -80,8 +95,22 @@ export function ReservationForm({ existingReservations, lastReservation, onCreat
     form.activityDate || null
   );
 
-  const updateField = useCallback((field: keyof FormData, value: string) => {
+  const updateField = useCallback((field: keyof FormData, value: string | boolean) => {
     setForm((prev) => ({ ...prev, [field]: value }));
+  }, []);
+
+  const handleVoucherRead = useCallback((data: VoucherData) => {
+    setForm((prev) => ({
+      ...prev,
+      voucherSecurityCode: data.codigoSeguridad ?? "",
+      voucherCouponCode: data.codigoCupon ?? "",
+      voucherProduct: data.producto ?? "",
+      voucherPricePaid: data.cantidadPagada ? String(data.cantidadPagada) : "",
+      voucherExpiry: data.caduca ?? "",
+      couponCode: data.codigoCupon ?? prev.couponCode,
+      totalPrice: data.cantidadPagada ? String(data.cantidadPagada) : prev.totalPrice,
+      paymentMethod: "groupon",
+    }));
   }, []);
 
   // Smart defaults
@@ -133,6 +162,12 @@ export function ReservationForm({ existingReservations, lastReservation, onCreat
       paymentRef: lastReservation.paymentRef ?? "",
       notes: lastReservation.notes ?? "",
       internalNotes: lastReservation.internalNotes ?? "",
+      voucherSecurityCode: "",
+      voucherCouponCode: "",
+      voucherProduct: "",
+      voucherPricePaid: "",
+      voucherExpiry: "",
+      voucherRedeemed: false,
     });
     if (lastReservation.participants) {
       setParticipants(lastReservation.participants);
@@ -151,6 +186,10 @@ export function ReservationForm({ existingReservations, lastReservation, onCreat
         toast.error("Completa los datos de la reserva");
         return;
       }
+      if (source === "groupon" && !form.voucherRedeemed && status === "confirmada") {
+        toast.error("Marca el cupón como canjeado en Groupon antes de confirmar");
+        return;
+      }
 
       const notificationType = status === "confirmada" ? "confirmacion" : "sin_disponibilidad";
 
@@ -159,8 +198,19 @@ export function ReservationForm({ existingReservations, lastReservation, onCreat
           clientName: form.clientName,
           clientPhone: form.clientPhone,
           clientEmail: form.clientEmail,
-          couponCode: source === "groupon" ? form.couponCode : undefined,
+          couponCode: source === "groupon" ? (form.voucherCouponCode || form.couponCode) : undefined,
           source,
+          ...(source === "groupon"
+            ? {
+                voucherSecurityCode: form.voucherSecurityCode || undefined,
+                voucherCouponCode: form.voucherCouponCode || undefined,
+                voucherProduct: form.voucherProduct || undefined,
+                voucherPricePaid: form.voucherPricePaid ? parseFloat(form.voucherPricePaid) : undefined,
+                voucherExpiry: form.voucherExpiry || undefined,
+                voucherRedeemed: form.voucherRedeemed,
+                voucherRedeemedAt: form.voucherRedeemed ? new Date().toISOString() : undefined,
+              }
+            : {}),
           station: form.station,
           activityDate: form.activityDate,
           schedule: form.schedule,
@@ -282,6 +332,20 @@ export function ReservationForm({ existingReservations, lastReservation, onCreat
             ))}
           </div>
         </div>
+
+        {/* Voucher Section — only for Groupon source */}
+        {source === "groupon" && (
+          <VoucherSection
+            onVoucherRead={handleVoucherRead}
+            securityCode={form.voucherSecurityCode}
+            couponCode={form.voucherCouponCode}
+            product={form.voucherProduct}
+            pricePaid={form.voucherPricePaid}
+            expiry={form.voucherExpiry}
+            redeemed={form.voucherRedeemed}
+            onFieldChange={(field, value) => updateField(field as keyof FormData, value)}
+          />
+        )}
 
         {/* Section 1: Cliente */}
         <fieldset className="space-y-3">

@@ -74,6 +74,9 @@ export async function POST(request: NextRequest) {
       status: reservationStatus,
       notes, internalNotes,
       notificationType, quoteId,
+      // Voucher fields
+      voucherSecurityCode, voucherCouponCode, voucherProduct,
+      voucherPricePaid, voucherExpiry, voucherRedeemed, voucherRedeemedAt,
     } = body as Record<string, unknown>;
 
     const reservation = await prisma.reservation.create({
@@ -102,6 +105,14 @@ export async function POST(request: NextRequest) {
         createdBy: session.user.id,
         emailSentAt: notificationType ? new Date() : undefined,
         whatsappSentAt: notificationType ? new Date() : undefined,
+        // Voucher fields
+        voucherSecurityCode: voucherSecurityCode as string | undefined,
+        voucherCouponCode: voucherCouponCode as string | undefined,
+        voucherProduct: voucherProduct as string | undefined,
+        voucherPricePaid: voucherPricePaid ? Number(voucherPricePaid) : undefined,
+        voucherExpiry: voucherExpiry ? new Date(voucherExpiry as string) : undefined,
+        voucherRedeemed: (voucherRedeemed as boolean) || false,
+        voucherRedeemedAt: voucherRedeemedAt ? new Date(voucherRedeemedAt as string) : undefined,
       },
     });
 

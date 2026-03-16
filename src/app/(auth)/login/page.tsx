@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Loader2 } from "lucide-react";
+import Link from "next/link";
 
 export default function LoginPage() {
   return (
@@ -38,7 +39,7 @@ function LoginForm() {
     setLoading(false);
 
     if (result?.error) {
-      setError("Invalid email or password");
+      setError("Email o contraseña incorrectos");
       return;
     }
 
@@ -51,9 +52,9 @@ function LoginForm() {
     <div className="flex min-h-screen items-center justify-center bg-slate-50">
       <div className="w-full max-w-sm space-y-6 rounded-lg border border-border bg-white p-8 shadow-sm">
         <div className="text-center">
-          <h1 className="text-2xl font-bold">Welcome back</h1>
+          <h1 className="text-2xl font-bold">Iniciar sesión</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Sign in to your dashboard
+            Accede a tu panel de gestión
           </p>
         </div>
 
@@ -66,12 +67,12 @@ function LoginForm() {
 
           <div className="space-y-2">
             <label htmlFor="email" className="text-sm font-medium">
-              Email
+              Email *
             </label>
             <Input
               id="email"
               type="email"
-              placeholder="you@company.com"
+              placeholder="tu@empresa.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
@@ -80,13 +81,18 @@ function LoginForm() {
           </div>
 
           <div className="space-y-2">
-            <label htmlFor="password" className="text-sm font-medium">
-              Password
-            </label>
+            <div className="flex items-center justify-between">
+              <label htmlFor="password" className="text-sm font-medium">
+                Contraseña *
+              </label>
+              <span className="text-xs text-muted-foreground cursor-pointer hover:underline">
+                ¿Olvidaste tu contraseña?
+              </span>
+            </div>
             <Input
               id="password"
               type="password"
-              placeholder="Enter your password"
+              placeholder="Tu contraseña"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
@@ -97,13 +103,20 @@ function LoginForm() {
             {loading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Signing in...
+                Iniciando sesión...
               </>
             ) : (
-              "Sign in"
+              "Iniciar sesión"
             )}
           </Button>
         </form>
+
+        <p className="text-center text-sm text-muted-foreground">
+          ¿No tienes cuenta?{" "}
+          <Link href="/register" className="font-medium text-primary hover:underline">
+            Regístrate
+          </Link>
+        </p>
 
         <p className="text-center text-xs text-muted-foreground">
           Demo: admin@demo.com / demo1234
