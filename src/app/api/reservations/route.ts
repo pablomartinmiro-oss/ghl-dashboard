@@ -103,8 +103,8 @@ export async function POST(request: NextRequest) {
         notificationType: notificationType as string | undefined,
         quoteId: quoteId as string | undefined,
         createdBy: session.user.id,
-        emailSentAt: notificationType ? new Date() : undefined,
-        whatsappSentAt: notificationType ? new Date() : undefined,
+        emailSentAt: undefined,
+        whatsappSentAt: undefined,
         // Voucher fields
         voucherSecurityCode: voucherSecurityCode as string | undefined,
         voucherCouponCode: voucherCouponCode as string | undefined,

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Search, MapPin, Calendar, Users } from "lucide-react";
+import { Search, MapPin, Calendar, Users, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Quote } from "@/hooks/useQuotes";
 import { STATIONS } from "../../reservas/_components/constants";
@@ -128,14 +128,17 @@ export function QuoteList({ quotes, selectedId, onSelect }: QuoteListProps) {
                 </div>
 
                 <div className="mt-2 flex items-center justify-between">
-                  <span className="text-xs text-text-secondary">
-                    {new Date(quote.createdAt).toLocaleDateString("es-ES", {
-                      day: "numeric",
-                      month: "short",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-text-secondary">
+                      {new Date(quote.createdAt).toLocaleDateString("es-ES", {
+                        day: "numeric",
+                        month: "short",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </span>
+                    {quote.status === "enviado" && quote.expiresAt && <ExpiryBadge expiresAt={quote.expiresAt} />}
+                  </div>
                   {quote.totalAmount > 0 && (
                     <span className="text-sm font-semibold text-text-primary">
                       {quote.totalAmount.toLocaleString("es-ES", { style: "currency", currency: "EUR" })}
@@ -149,6 +152,21 @@ export function QuoteList({ quotes, selectedId, onSelect }: QuoteListProps) {
       </div>
     </div>
   );
+}
+
+function ExpiryBadge({ expiresAt }: { expiresAt: string }) {
+  const now = new Date();
+  const expiry = new Date(expiresAt);
+  const diffMs = expiry.getTime() - now.getTime();
+  const diffDays = Math.ceil(diffMs / 86400000);
+
+  if (diffDays < 0) {
+    return <span className="flex items-center gap-0.5 rounded-full bg-red-100 px-1.5 py-0.5 text-[10px] font-medium text-red-600"><Clock className="h-2.5 w-2.5" /> Expirado</span>;
+  }
+  if (diffDays <= 2) {
+    return <span className="flex items-center gap-0.5 rounded-full bg-gold-light px-1.5 py-0.5 text-[10px] font-medium text-gold"><Clock className="h-2.5 w-2.5" /> {diffDays}d</span>;
+  }
+  return <span className="flex items-center gap-0.5 text-[10px] text-text-secondary"><Clock className="h-2.5 w-2.5" /> {diffDays}d</span>;
 }
 
 export { STATUS_CONFIG };

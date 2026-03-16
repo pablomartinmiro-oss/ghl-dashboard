@@ -14,6 +14,7 @@ import { STATIONS, SCHEDULES, LANGUAGES, formatEUR } from "./constants";
 import { VoucherSection } from "./VoucherSection";
 import { PriceBreakdown } from "./PriceBreakdown";
 import { ParticipantsTable } from "./ParticipantsTable";
+import { ClientSearch } from "./ClientSearch";
 import { findProductForService, findEquipmentProduct, getServiceDays } from "./pricing-helpers";
 import type { PriceLineItem } from "./pricing-helpers";
 import type { VoucherData } from "@/hooks/useVoucher";
@@ -175,15 +176,15 @@ export function ReservationForm({ existingReservations, lastReservation, onCreat
         {
           onSuccess: () => {
             toast.success(status === "confirmada"
-              ? `Reserva confirmada — ${notifyMethod === "email" ? "email" : notifyMethod === "whatsapp" ? "WhatsApp" : "email + WhatsApp"} enviados a ${form.clientName}`
-              : `Sin disponibilidad — notificación enviada a ${form.clientName}`);
+              ? `Reserva confirmada para ${form.clientName}`
+              : `Sin disponibilidad — ${form.clientName}`);
             onCreated(); clearForm();
           },
           onError: () => toast.error("Error al crear la reserva"),
         }
       );
     },
-    [form, source, mode, participants, notifyMethod, createReservation, onCreated, clearForm, effectivePrice]
+    [form, source, mode, participants, createReservation, onCreated, clearForm, effectivePrice]
   );
 
   useEffect(() => {
@@ -238,8 +239,13 @@ export function ReservationForm({ existingReservations, lastReservation, onCreat
           <legend className="text-sm font-semibold text-text-primary">Cliente</legend>
           <div className="grid gap-3 sm:grid-cols-2">
             <div>
-              <label className="mb-1 block text-xs text-text-secondary">Nombre completo *</label>
-              <input ref={nameRef} type="text" value={form.clientName} onChange={(e) => updateField("clientName", e.target.value)} className="w-full rounded-lg border border-border bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-coral" />
+              <ClientSearch
+                value={form.clientName}
+                onChange={(v) => updateField("clientName", v)}
+                onSelect={(c) => { updateField("clientName", c.name); updateField("clientPhone", c.phone); updateField("clientEmail", c.email); }}
+                reservations={existingReservations}
+                inputRef={nameRef}
+              />
               {duplicateWarning && <div className="mt-1 flex items-center gap-1 text-xs text-yellow-600"><AlertTriangle className="h-3 w-3" /> Ya existe una reserva para este cliente en esta fecha.</div>}
             </div>
             <div><label className="mb-1 block text-xs text-text-secondary">Teléfono *</label><input type="tel" value={form.clientPhone} onChange={(e) => updateField("clientPhone", e.target.value)} className="w-full rounded-lg border border-border bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-coral" /></div>

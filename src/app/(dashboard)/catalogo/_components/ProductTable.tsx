@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Pencil, Trash2, Plus, Sun, Snowflake } from "lucide-react";
+import { Pencil, Trash2, Plus, Sun, Snowflake, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Product } from "@/hooks/useProducts";
 import type { Season, DayPricingMatrix, PrivateLessonMatrix } from "@/lib/pricing/types";
@@ -62,6 +62,7 @@ function getPriceDisplay(product: Product, season: Season): string {
 export function ProductTable({ products, onEdit, onDelete, onAdd }: ProductTableProps) {
   const [filterCategory, setFilterCategory] = useState<string>("");
   const [filterStation, setFilterStation] = useState<string>("");
+  const [searchQuery, setSearchQuery] = useState("");
   const [season, setSeason] = useState<Season>("media");
   const categories = Object.keys(CATEGORY_LABELS);
 
@@ -71,6 +72,11 @@ export function ProductTable({ products, onEdit, onDelete, onAdd }: ProductTable
 
   if (filterStation) {
     filtered = filtered.filter((p) => p.station === filterStation || p.station === "all");
+  }
+
+  if (searchQuery) {
+    const q = searchQuery.toLowerCase();
+    filtered = filtered.filter((p) => p.name.toLowerCase().includes(q));
   }
 
   const grouped = filtered.reduce<Record<string, Product[]>>((acc, p) => {
@@ -124,8 +130,18 @@ export function ProductTable({ products, onEdit, onDelete, onAdd }: ProductTable
         </div>
       </div>
 
-      {/* Filters */}
+      {/* Search + Filters */}
       <div className="flex flex-wrap items-center gap-3">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-secondary" />
+          <input
+            type="text"
+            placeholder="Buscar producto..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="rounded-lg border border-border bg-white pl-10 pr-3 py-1.5 text-sm placeholder:text-text-secondary focus:border-coral focus:outline-none focus:ring-1 focus:ring-coral w-48"
+          />
+        </div>
         <div className="flex gap-2 flex-wrap">
           <button
             onClick={() => setFilterCategory("")}
