@@ -45,7 +45,7 @@ const NAV_ITEMS: NavItem[] = [
     label: "Reservas",
     href: "/reservas",
     icon: CalendarCheck,
-    permission: "reservations:view",
+    permission: null,
   },
   {
     label: "Catálogo",

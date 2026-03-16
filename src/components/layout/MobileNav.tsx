@@ -34,7 +34,7 @@ interface MobileNavItem {
 const NAV_ITEMS: MobileNavItem[] = [
   { label: "Dashboard", href: "/", icon: LayoutDashboard, permission: null },
   { label: "Presupuestos", href: "/presupuestos", icon: FileText, permission: null },
-  { label: "Reservas", href: "/reservas", icon: CalendarCheck, permission: "reservations:view" },
+  { label: "Reservas", href: "/reservas", icon: CalendarCheck, permission: null },
   { label: "Catálogo", href: "/catalogo", icon: Package, permission: null },
   { label: "Comunicaciones", href: "/comms", icon: MessageSquare, permission: "comms:view" },
   { label: "Contactos", href: "/contacts", icon: Users, permission: "contacts:view" },
