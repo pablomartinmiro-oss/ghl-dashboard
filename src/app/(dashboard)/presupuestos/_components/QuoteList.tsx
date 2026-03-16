@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Search, MapPin, Calendar, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Quote } from "@/hooks/useQuotes";
+import { STATIONS } from "../../reservas/_components/constants";
 
 const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
   nuevo: { label: "Nuevo", color: "bg-soft-blue-light text-soft-blue" },
@@ -12,13 +13,9 @@ const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
   aceptado: { label: "Aceptado", color: "bg-coral-light text-coral" },
 };
 
-const DESTINATION_LABELS: Record<string, string> = {
-  baqueira: "Baqueira",
-  sierra_nevada: "Sierra Nevada",
-  formigal: "Formigal",
-  alto_campoo: "Alto Campoo",
-  grandvalira: "Grandvalira",
-};
+function getStationLabel(value: string): string {
+  return STATIONS.find((s) => s.value === value)?.label ?? value;
+}
 
 interface QuoteListProps {
   quotes: Quote[];
@@ -78,8 +75,8 @@ export function QuoteList({ quotes, selectedId, onSelect }: QuoteListProps) {
             className="rounded-lg border border-border px-3 py-1.5 text-xs focus:border-coral focus:outline-none"
           >
             <option value="">Todos los destinos</option>
-            {Object.entries(DESTINATION_LABELS).map(([key, label]) => (
-              <option key={key} value={key}>{label}</option>
+            {STATIONS.map((s) => (
+              <option key={s.value} value={s.value}>{s.label}</option>
             ))}
           </select>
         </div>
@@ -118,7 +115,7 @@ export function QuoteList({ quotes, selectedId, onSelect }: QuoteListProps) {
                 <div className="mt-2 flex flex-wrap gap-3 text-xs text-text-secondary">
                   <span className="flex items-center gap-1">
                     <MapPin className="h-3 w-3" />
-                    {DESTINATION_LABELS[quote.destination] || quote.destination}
+                    {getStationLabel(quote.destination)}
                   </span>
                   <span className="flex items-center gap-1">
                     <Calendar className="h-3 w-3" />
@@ -154,4 +151,4 @@ export function QuoteList({ quotes, selectedId, onSelect }: QuoteListProps) {
   );
 }
 
-export { STATUS_CONFIG, DESTINATION_LABELS };
+export { STATUS_CONFIG };
