@@ -25,7 +25,9 @@
     │  │  - Contacts    │  │  - Voucher    │  │
     │  │  - Convos      │  │    image OCR  │  │
     │  │  - Pipelines   │  │              │  │
+    │  │  - Opps        │  │              │  │
     │  │  - OAuth       │  │              │  │
+    │  │  - Webhooks    │  │              │  │
     │  └───────────────┘  └───────────────┘  │
     └─────────────────────────────────────────┘
 ```
@@ -41,12 +43,21 @@ Browser → Middleware (JWT check) → Next.js Route
   │   └── Layout wraps with SessionProvider + QueryClientProvider
   │
   └── API routes:
-      ├── /api/auth/*           — NextAuth handlers
-      ├── /api/crm/*            — GHL bridge (auth + permissions + cache-aside + GHL client)
-      ├── /api/reservations/*   — Local DB CRUD (auth + tenant scope)
-      ├── /api/voucher/read     — Claude API (auth + image → structured JSON)
-      ├── /api/settings/*       — Tenant + team + mappings (auth + permissions)
-      └── /api/health           — Public health check
+      ├── /api/auth/*              — NextAuth handlers
+      ├── /api/crm/*               — GHL bridge (auth + permissions + mode branch)
+      │   ├── contacts/            — GET/POST + [id] GET/PUT/DELETE + [id]/notes GET/POST
+      │   ├── conversations/       — GET + [id]/messages GET/POST
+      │   ├── pipelines/           — GET
+      │   ├── opportunities/       — GET + [id] PUT
+      │   ├── oauth/               — authorize + callback (public)
+      │   └── webhooks/            — POST (HMAC verified, updates cache)
+      ├── /api/admin/ghl/*         — Admin sync tools (full-sync, sync-status, test, create-fields)
+      ├── /api/cron/sync           — Background sync (public, for external cron)
+      ├── /api/dashboard/stats     — Cached stats for dashboard
+      ├── /api/reservations/*      — Local DB CRUD (auth + tenant scope)
+      ├── /api/voucher/read        — Claude API (auth + image → structured JSON)
+      ├── /api/settings/*          — Tenant + team + mappings (auth + permissions)
+      └── /api/health              — Public health check
 ```
 
 ## Multi-Tenant Architecture
@@ -62,7 +73,13 @@ Tenant (company)
   ├── GrouponProductMappings (regex → services mapping)
   ├── StationCapacity (per station/date)
   ├── Notifications
-  └── GHL Connection (encrypted OAuth tokens, locationId)
+  ├── GHL Connection (encrypted OAuth tokens, locationId)
+  ├── CachedContacts (synced from GHL)
+  ├── CachedConversations (synced from GHL)
+  ├── CachedOpportunities (synced from GHL)
+  ├── CachedPipelines (synced from GHL)
+  ├── SyncStatus (last sync times, counts, in-progress flag)
+  └── SyncQueue (failed write retries)
 ```
 
 **Every query includes `WHERE tenantId = ?`** — enforced at the API route level.
@@ -72,13 +89,15 @@ Tenant (company)
 - Uses Prisma v7 with `@prisma/adapter-pg` (not direct URL)
 - Generated client at `src/generated/prisma/client`
 - Every query MUST include `tenantId` scope
+- JSON fields: cast with `JSON.parse(JSON.stringify(obj)) as Prisma.InputJsonValue`
+- Import Prisma types from `@/generated/prisma/client` (not `@/generated/prisma`)
 
 ## Caching
 - Import `redis`, `getCachedOrFetch`, `invalidateCache` from `@/lib/cache/redis`
 - Cache keys defined in `@/lib/cache/keys.ts`
 - TTLs defined in `CacheTTL` constant
-- All GHL reads go through `getCachedOrFetch()`
-- Webhook-triggered invalidation via `@/lib/cache/invalidation.ts`
+- Mock mode: GHL reads go through `getCachedOrFetch()` → Redis
+- Live mode: reads go through cache tables (Postgres) → kept fresh by webhooks + cron
 
 ## Encryption
 - Import `encrypt`/`decrypt` from `@/lib/encryption`
@@ -131,14 +150,22 @@ Tenant (company)
 ## Middleware
 - `src/middleware.ts` — uses `getToken()` from `next-auth/jwt` (edge-compatible)
 - Does NOT import `@/lib/auth/config` (would pull in Prisma → node:path → edge crash)
-- Public routes: `/login`, `/register`, `/api/auth`, `/api/health`, `/api/crm/webhooks`, `/api/crm/oauth`
+- Public routes: `/login`, `/register`, `/api/auth`, `/api/health`, `/api/crm/webhooks`, `/api/crm/oauth`, `/api/cron/sync`
 - Unauthenticated users redirected to `/login`
 - Onboarding redirect: if `token.onboardingComplete === false`, redirects to `/onboarding`
 
 ## GHL Integration
+
+### Two Client Modes
 - **Mock mode**: `createGHLClient(tenantId)` from `@/lib/ghl/client.ts` → returns `MockGHLClient` with `.get()/.post()/.put()/.delete()` methods
 - **Live mode**: `getGHLClient(tenantId)` from `@/lib/ghl/api.ts` → returns typed `GHLClient` class with named methods (`.getContacts()`, `.updateContact()`, etc.)
-- Real client: axios with rate limiting (80/10s), token refresh on 401, retry with backoff on 429/5xx
+
+### GHLClient Class (`src/lib/ghl/api.ts`)
+- Typed methods: getContacts, getContact, createContact, updateContact, deleteContact, searchContacts, getContactNotes, addContactNote, addContactTag, removeContactTag, getConversations, getConversation, getMessages, sendMessage, getPipelines, getOpportunities, getOpportunity, createOpportunity, updateOpportunity, getCustomFields, createCustomField, getLocation, getCalendars, getAppointments, getForms, getFormSubmissions, getTags
+- Auto-refresh on 401, exponential backoff on 429/5xx
+- Rate limiting: 80 requests per 10 seconds
+
+### Other GHL Files
 - Mock server: `src/lib/ghl/mock-server.ts` — 20 contacts, 10 conversations, 15 opportunities
 - OAuth: `src/lib/ghl/oauth.ts` — `getAuthorizeUrl()` and `exchangeCodeForTokens()`
 - OAuth routes: `/api/crm/oauth/authorize` (requires auth) and `/api/crm/oauth/callback` (public)
@@ -187,6 +214,9 @@ if (mode === "live") {
 // else: use MockGHLClient (existing mock flow)
 ```
 
+### Webhook Events Handled
+ContactCreate, ContactUpdate, ContactDelete, ContactTagUpdate, ContactDndUpdate, InboundMessage, OutboundMessage, OpportunityCreate, OpportunityStageUpdate, OpportunityStatusUpdate, OpportunityMonetaryValueUpdate, NoteCreate, TaskCreate
+
 ## Voucher System (AI-Powered)
 
 ### Reader Flow
@@ -217,6 +247,12 @@ VoucherSection (drop zone / manual) → ReservationForm state → POST /api/rese
 - Tailwind v4 with `tw-animate-css`
 - shadcn/ui v4 uses base-ui (not Radix) — `render` prop instead of `asChild`
 
+## Design System
+- DM Sans font
+- Warm coral primary (#E87B5A), sage green success (#5B8C6D), warm gold warning (#D4A853)
+- Warm off-white background (#FAF9F7), warm black text (#2D2A26)
+- 16px card radius, 10px input/button radius, 6px pill radius
+
 ## Layout
 - Route groups: `(dashboard)` for authenticated pages, `(auth)` for login/register/onboarding
 - Dashboard layout (`src/app/(dashboard)/layout.tsx`) wraps with `SessionProvider` + `QueryClientProvider`
@@ -225,7 +261,7 @@ VoucherSection (drop zone / manual) → ReservationForm state → POST /api/rese
 ## React Query Hooks
 - `src/hooks/useGHL.ts` — GHL data fetching (conversations, contacts, pipelines)
 - `src/hooks/useReservations.ts` — reservation CRUD + stats + capacity
-- `src/hooks/useSettings.ts` — tenant settings, team, data mode, invites
+- `src/hooks/useSettings.ts` — tenant settings, team, data mode, invites, sync status
 - `src/hooks/useVoucher.ts` — voucher AI reader mutation
 - All use `fetchJSON<T>()` helper that throws on non-ok responses
 
@@ -237,7 +273,7 @@ VoucherSection (drop zone / manual) → ReservationForm state → POST /api/rese
 - Keyboard shortcuts: F1=New, F2=Confirm, F3=No availability, F4=Duplicate, Ctrl+Enter=Confirm
 
 ## Settings Module
-- DataModeCard — mock/live toggle (requires Owner + GHL connected for live)
+- DataModeCard — mock/live toggle + sync status + manual sync button (requires Owner + GHL connected for live)
 - TenantInfoCard — company name, slug, created date
 - GHLConnectionCard — connection status, reconnect button
 - GrouponMappingCard — CRUD table for Groupon product → Skicenter service mappings
@@ -246,7 +282,7 @@ VoucherSection (drop zone / manual) → ReservationForm state → POST /api/rese
 
 ## GHL Webhooks
 - Endpoint: `POST /api/crm/webhooks` (public, verified via HMAC-SHA256)
-- Events trigger cache invalidation by type
+- Events trigger real-time cache upserts via sync.ts handlers
 - All webhooks logged to `WebhookLog` table
 
 ## Optimistic Updates

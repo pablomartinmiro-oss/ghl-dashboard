@@ -42,12 +42,15 @@ You are an autonomous senior full-stack engineer building a multi-tenant dashboa
 | `ARCHITECTURE.md` | Pattern documentation. Follow these patterns for all new code. |
 | `prisma/schema.prisma` | Database schema. Never edit without creating a migration. |
 | `src/lib/env.ts` | Zod-validated env vars. Use `env.X` not `process.env.X`. |
-| `src/lib/ghl/client.ts` | GHL API client. All GHL calls go through this. |
+| `src/lib/ghl/api.ts` | **GHLClient class** — typed methods for all GHL endpoints. Used in live mode. |
+| `src/lib/ghl/client.ts` | **MockGHLClient factory** — `createGHLClient()` returns mock client. Used in mock mode. |
+| `src/lib/ghl/sync.ts` | **Sync service** — fullSync, incrementalSync, webhook handlers, SyncQueue processor. |
+| `src/lib/ghl/types.ts` | All GHL API type definitions. |
 | `src/lib/auth/config.ts` | NextAuth v5 config. Credentials provider + JWT strategy. |
 | `src/lib/auth/permissions.ts` | RBAC definitions. Every API route checks permissions here. |
-| `src/lib/cache/redis.ts` | Cache-aside pattern. Every GHL read goes through cache. |
+| `src/lib/cache/redis.ts` | Cache-aside pattern for Redis. |
 | `src/lib/logger.ts` | Pino logger. Use structured logging, not console.log. |
-| `src/lib/data/getDataMode.ts` | Checks tenant's mock/live data mode. |
+| `src/lib/data/getDataMode.ts` | Checks tenant's mock/live data mode. Every API route branches on this. |
 
 ## File Structure Overview
 
@@ -59,7 +62,7 @@ src/
 │   │   ├── register/page.tsx      # Registration (new tenant + invite flow)
 │   │   └── onboarding/            # 4-step wizard
 │   ├── (dashboard)/               # With sidebar + topbar layout
-│   │   ├── page.tsx               # Dashboard home (stats, recent activity)
+│   │   ├── page.tsx               # Dashboard home (stats, recent activity, live GHL stats)
 │   │   ├── comms/                 # Communications (3-panel chat)
 │   │   ├── contacts/              # Contact list + detail pages
 │   │   ├── pipeline/              # Kanban board
@@ -75,7 +78,7 @@ src/
 │   │   ├── catalogo/              # Product catalog
 │   │   └── settings/              # Settings page
 │   │       └── _components/
-│   │           ├── DataModeCard.tsx       # Mock/Live toggle
+│   │           ├── DataModeCard.tsx       # Mock/Live toggle + sync status
 │   │           ├── TeamInviteCard.tsx     # Invite team members
 │   │           ├── GrouponMappingCard.tsx  # Product mapping editor
 │   │           ├── GHLConnectionCard.tsx
@@ -83,13 +86,29 @@ src/
 │   │           └── TeamTable.tsx
 │   └── api/
 │       ├── auth/register/          # Registration API
-│       ├── crm/                    # GHL bridge routes (conversations, contacts, etc.)
+│       ├── admin/ghl/              # Admin GHL tools
+│       │   ├── full-sync/          # POST — trigger full sync
+│       │   ├── sync-status/        # GET — current sync status
+│       │   ├── sync-contacts/      # POST — legacy sync (delegates to fullSync)
+│       │   ├── create-fields/      # POST — create custom fields in GHL
+│       │   └── test/               # GET — test GHL connection
+│       ├── crm/                    # GHL bridge routes
+│       │   ├── contacts/           # GET (list) + POST (create)
+│       │   ├── contacts/[id]/      # GET + PUT + DELETE
+│       │   ├── contacts/[id]/notes/# GET + POST
+│       │   ├── conversations/      # GET (list)
+│       │   ├── conversations/[id]/messages/ # GET + POST
+│       │   ├── pipelines/          # GET (list)
+│       │   ├── opportunities/      # GET (list)
+│       │   ├── opportunities/[id]/ # PUT (update stage/status/value)
 │       │   ├── oauth/              # GHL OAuth authorize + callback
-│       │   └── webhooks/           # GHL webhook receiver
+│       │   └── webhooks/           # GHL webhook receiver (HMAC verified)
+│       ├── cron/sync/              # Background sync cron (public route)
+│       ├── dashboard/stats/        # Dashboard stats from cache
 │       ├── reservations/           # CRUD + stats + capacity + voucher-stats
 │       ├── voucher/read/           # AI voucher image reader (Claude API)
 │       ├── settings/
-│       │   ├── tenant/             # Tenant settings + data mode toggle
+│       │   ├── tenant/             # Tenant settings + data mode toggle + sync trigger
 │       │   ├── team/               # Team list + invite + role management
 │       │   └── groupon-mappings/   # Groupon product mapping CRUD
 │       └── health/                 # Health check endpoint
@@ -100,14 +119,20 @@ src/
 ├── hooks/
 │   ├── useGHL.ts                   # GHL data fetching hooks
 │   ├── useReservations.ts          # Reservation CRUD hooks
-│   ├── useSettings.ts             # Settings + data mode + invite hooks
+│   ├── useSettings.ts             # Settings + data mode + invite + sync status hooks
 │   ├── useVoucher.ts              # Voucher AI reader hook
 │   └── usePermissions.ts          # RBAC hook
 ├── lib/
 │   ├── auth/                       # NextAuth config + permissions
-│   ├── cache/                      # Redis cache-aside
+│   ├── cache/                      # Redis cache-aside + keys + invalidation
 │   ├── data/                       # getDataMode utility
-│   ├── ghl/                        # GHL client + mock server + OAuth + types
+│   ├── ghl/                        # GHL integration
+│   │   ├── api.ts                  # GHLClient class (live mode) + getGHLClient factory
+│   │   ├── client.ts               # MockGHLClient factory (mock mode) + re-exports
+│   │   ├── sync.ts                 # Sync service (full, incremental, webhook, queue)
+│   │   ├── types.ts                # All GHL API types
+│   │   ├── mock-server.ts          # Mock data generator
+│   │   └── oauth.ts                # OAuth helpers
 │   ├── db.ts                       # Prisma client (with adapter-pg)
 │   ├── encryption.ts               # AES-256-GCM
 │   ├── env.ts                      # Zod-validated env
@@ -126,6 +151,46 @@ src/
 7. **Team invites** — Owner generates invite token → placeholder user created → invitee registers with `?invite={token}` → joins existing tenant as Sales Rep
 8. **4 default roles**: Owner (all perms), Manager (all perms), Sales Rep (view + create), VA/Admin (view only)
 
+## How Mock/Real Data Mode Works
+
+1. Tenant has `dataMode` field: "mock" (default) or "live"
+2. Toggle in Settings → DataModeCard (requires Owner role + GHL connected for live)
+3. `getDataMode(tenantId)` utility checks the mode — every API route branches on this
+4. **Mock mode**: `createGHLClient(tenantId)` → `MockGHLClient` with axios-style `.get()/.post()/.put()/.delete()` methods → returns fake data from `mock-server.ts`
+5. **Live mode**: `getGHLClient(tenantId)` → typed `GHLClient` class → reads from local cache tables (synced from GHL), writes through to GHL API
+6. Cannot switch to live without valid GHL OAuth tokens
+7. Switching to live for the first time triggers `fullSync()` in background
+
+## How GHL Sync Works
+
+```
+GHL API ←→ GHLClient (typed methods) ←→ Cache Tables (Postgres) ←→ API Routes ←→ Frontend
+                                              ↑
+                                        Webhooks (real-time)
+                                        Full Sync (on toggle to live)
+                                        Incremental Sync (cron every 5 min)
+```
+
+### Sync Modes
+1. **Full Sync** — `fullSync(tenantId)` paginates through all GHL contacts, conversations, pipelines, opportunities → bulk upserts to cache tables. Triggered on first switch to live or manually.
+2. **Webhook Sync** — Real-time cache upserts on GHL events (ContactCreate/Update/Delete, InboundMessage, OutboundMessage, OpportunityCreate/StageUpdate/StatusUpdate, etc.)
+3. **Incremental Sync** — `incrementalSync(tenantId)` checks staleness, re-fetches if needed. Run by cron.
+4. **Write-Through** — Writes go to GHL first (source of truth), then update local cache. On failure, queued to SyncQueue for retry with exponential backoff.
+
+### Cache Tables (Prisma models)
+- `CachedContact` — mirrors GHL contacts (name, email, phone, tags, customFields, source)
+- `CachedConversation` — mirrors GHL conversations (contactName, lastMessage, unreadCount)
+- `CachedOpportunity` — mirrors GHL opportunities (pipeline, stage, value, status)
+- `CachedPipeline` — mirrors GHL pipelines (name, stages JSON)
+- `SyncStatus` — per-tenant sync metadata (lastFullSync, counts, syncInProgress)
+- `SyncQueue` — failed write retries (action, payload, attempts, exponential backoff)
+
+### Key Files
+- `src/lib/ghl/sync.ts` — mapper functions, fullSync, incrementalSync, webhook handlers, processSyncQueue
+- `src/lib/ghl/api.ts` — `GHLClient` class with typed methods, `getGHLClient()` factory
+- `src/app/api/cron/sync/route.ts` — cron endpoint (public, processes queue + incremental sync)
+- `src/app/api/crm/webhooks/route.ts` — webhook receiver, HMAC verified, calls sync handlers
+
 ## How the Voucher Reader Works
 
 1. User selects "CUPÓN GROUPON" source in reservation form → VoucherSection appears
@@ -138,28 +203,10 @@ src/
 8. All voucher data saved to Reservation record in DB
 9. VoucherStats widget on /reservas shows tracking: pendientes, canjeados, ingresos, expiring alerts
 
-## How Mock/Real Data Toggle Works
+## Current Design System (Applied)
 
-1. Tenant has `dataMode` field: "mock" (default) or "live"
-2. Toggle in Settings → DataModeCard (requires Owner role + GHL connected for live)
-3. `getDataMode(tenantId)` utility checks the mode
-4. Mock = queries local DB (seed data). Live = calls GHL API via bridge routes.
-5. Cannot switch to live without valid GHL OAuth tokens
-
-## Architecture Decisions
-
-- **Multi-tenant**: Every DB query scoped by `tenantId`. No cross-tenant data leaks.
-- **GHL API bridge**: All GHL calls go through `/api/crm/*` routes → `createGHLClient(tenantId)` → cache-aside → GHL API
-- **Mock/Real toggle**: Per-tenant data mode. Mock uses local DB, live hits GHL. Switchable from Settings.
-- **Prisma v7 + adapter-pg**: Uses `@prisma/adapter-pg` pattern, not direct URL connection
-- **Edge middleware**: Uses `getToken()` from `next-auth/jwt`, NOT full auth() (would pull in Prisma → node:path → edge crash)
-- **GHL tokens encrypted**: AES-256-GCM via `lib/encryption.ts`, never stored plaintext
-- **Voucher reader**: Uses `process.env.ANTHROPIC_API_KEY` directly (not env.ts), per spec requirement
-
-## Current Design System (to be overhauled)
-
-Currently uses Inter font with cyan/blue accent colors. Planned overhaul:
-- **Font:** DM Sans (not yet applied)
+Warm/premium aesthetic inspired by kinso.ai:
+- **Font:** DM Sans (applied via globals.css)
 - **Background:** #FAF9F7 (warm off-white)
 - **Primary accent:** #E87B5A (warm coral)
 - **Success:** #5B8C6D (sage green)
@@ -169,6 +216,20 @@ Currently uses Inter font with cyan/blue accent colors. Planned overhaul:
 - **Text secondary:** #8A8580 (warm gray)
 - **Border:** #E8E4DE
 - **Border radius:** 16px cards, 10px inputs/buttons, 6px pills
+
+## Architecture Decisions
+
+- **Multi-tenant**: Every DB query scoped by `tenantId`. No cross-tenant data leaks.
+- **Two GHL clients**: `MockGHLClient` (mock mode, axios-style) and `GHLClient` (live mode, typed methods). Never mixed.
+- **Live mode reads from local cache**, not GHL directly. Cache kept fresh by webhooks + cron.
+- **Write-through sync**: Writes go to GHL API first, then cache. Failures queued to SyncQueue.
+- **Prisma v7 + adapter-pg**: Uses `@prisma/adapter-pg` pattern, not direct URL connection
+- **Edge middleware**: Uses `getToken()` from `next-auth/jwt`, NOT full auth() (would pull in Prisma → node:path → edge crash)
+- **GHL tokens encrypted**: AES-256-GCM via `lib/encryption.ts`, never stored plaintext
+- **Voucher reader**: Uses `process.env.ANTHROPIC_API_KEY` directly (not env.ts), per spec requirement
+- **Cron is a public route**: `/api/cron/sync` in PUBLIC_ROUTES, meant for external cron trigger (Railway cron or uptime monitor)
+- **JSON fields in Prisma**: Use `JSON.parse(JSON.stringify(obj)) as Prisma.InputJsonValue` for type compatibility
+- **Railway deployment**: Migrations run at start time (not build), because DATABASE_URL is injected at runtime
 
 ## On Every Session: Startup Protocol
 
@@ -191,7 +252,7 @@ Currently uses Inter font with cyan/blue accent colors. Planned overhaul:
 
 1. **Every API route checks permissions** via `hasPermission()` — this is the security boundary
 2. **Every DB query scoped by tenantId** — no exceptions, no data leaks between tenants
-3. **Every GHL read goes through cache-aside** — never hit GHL directly
+3. **Every live-mode read goes through cache tables** — never hit GHL directly for reads
 4. **Every data component has a Skeleton loader** — never show blank screens
 5. **Every mutation is optimistic** — update UI immediately, rollback on error
 6. **GHL tokens always encrypted** — use `lib/encryption.ts`, never plaintext
@@ -247,7 +308,7 @@ Error detected →
 - **Base URL:** `https://services.leadconnectorhq.com`
 - **Auth header:** `Authorization: Bearer {access_token}`
 - **Version header:** `Version: 2021-07-28` (required on ALL requests)
-- **Access tokens expire in 24 hours** — auto-refresh via `refreshGHLTokens()`
+- **Access tokens expire in 24 hours** — auto-refresh via `refreshGHLTokens()` in GHLClient
 - **Rate limits:** 100 requests per 10 seconds per location, 200k/day
 - **Mock mode:** Set `ENABLE_MOCK_GHL=true` for local dev without real GHL connection
 
