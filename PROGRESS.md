@@ -1,8 +1,8 @@
 # GHL Dashboard — Build Progress
 
 ## Current Status
-- **Phase:** DASHBOARD + PRESUPUESTOS ENHANCEMENT COMPLETE
-- **Step:** All phases complete + Dashboard real stats + Quote-to-Reservation flow
+- **Phase:** UX POLISH & FIXES COMPLETE
+- **Step:** All phases complete + UX polish (print, autocomplete, expiry, search)
 - **Live URL:** https://crm-dash-prod.up.railway.app
 - **Last deployed commit:** f78b7f9 (2026-03-16)
 - **Next:** Deploy to Railway, connect real GHL sub-account
@@ -236,6 +236,37 @@ A fully functional multi-tenant CRM dashboard for Skicenter ski travel agencies,
 - Removed duplicate `DESTINATION_LABELS` from QuoteList, QuoteDetail, and dashboard
 - All 7 stations consistent: Baqueira, Sierra Nevada, Valdesquí, La Pinilla, Grandvalira, Formigal, Alto Campoo
 
+### Phase L: UX Polish & Fixes (2026-03-16) ✅
+
+**Print/PDF for Quotes** ✅
+- Added print button to EmailPreviewModal (printer icon next to close)
+- Opens formatted HTML in new window with print-ready CSS
+- Full Skicenter branding, gradient headers, styled tables
+- Users can print or "Save as PDF" from browser dialog
+
+**Client Search Autocomplete** ✅
+- New `ClientSearch.tsx` component in reservas
+- Searches existing reservations by client name (2+ char trigger)
+- Shows dropdown with name, phone, email
+- Selecting auto-fills all 3 client fields in ReservationForm
+
+**Fix Fake Notification Timestamps** ✅
+- Removed fake `emailSentAt`/`whatsappSentAt` timestamps from reservation creation
+- Previously set to `new Date()` regardless of notification method
+- Now `undefined` on creation — to be set when actual delivery is implemented
+- Toast messages no longer falsely claim notifications were sent
+
+**Quote Expiry Badges** ✅
+- `ExpiryBadge` component in QuoteList for sent quotes
+- Red "Expirado" badge when past expiry date
+- Gold warning badge when ≤2 days remaining
+- Subtle day count for quotes with more time
+
+**Product Search** ✅
+- Added search input to catálogo ProductTable
+- Filters products by name across all categories
+- Works alongside existing category and station filters
+
 ## DB Migrations
 1. `init` — Core models (Tenant, User, Role, Reservation, etc.)
 2. `20260316100000_phase2_auth_voucher_datamode` — Auth fields, voucher fields, dataMode, GrouponProductMapping
@@ -252,6 +283,8 @@ A fully functional multi-tenant CRM dashboard for Skicenter ski travel agencies,
 - **Connect real GHL sub-account** via OAuth flow and test end-to-end live sync
 - **Set up Railway cron** for `/api/cron/sync` (every 5 minutes)
 - **Test webhook delivery** — register webhook URL in GHL marketplace app settings
+- **Email/WhatsApp delivery** — integrate Resend (email) + Twilio (WhatsApp) for real notifications
+- **Deploy latest** — commits after f78b7f9 not yet deployed to Railway
 
 ## Key Decisions
 - **Prisma v7** requires adapter pattern — `@prisma/adapter-pg`
