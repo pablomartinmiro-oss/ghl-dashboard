@@ -13,6 +13,7 @@ import {
   LayoutDashboard,
   FileText,
   Package,
+  CalendarCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -39,6 +40,12 @@ const NAV_ITEMS: NavItem[] = [
     href: "/presupuestos",
     icon: FileText,
     permission: null,
+  },
+  {
+    label: "Reservas",
+    href: "/reservas",
+    icon: CalendarCheck,
+    permission: "reservations:view",
   },
   {
     label: "Catálogo",
@@ -74,9 +81,10 @@ const NAV_ITEMS: NavItem[] = [
 
 interface SidebarProps {
   unreadCount?: number;
+  todayReservations?: number;
 }
 
-export function Sidebar({ unreadCount = 0 }: SidebarProps) {
+export function Sidebar({ unreadCount = 0, todayReservations = 0 }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
   const pathname = usePathname();
   const { can } = usePermissions();
@@ -121,8 +129,10 @@ export function Sidebar({ unreadCount = 0 }: SidebarProps) {
               ? pathname === "/"
               : pathname.startsWith(item.href);
           const Icon = item.icon;
-          const showBadge =
-            item.href === "/comms" && unreadCount > 0;
+          const badgeCount =
+            item.href === "/comms" ? unreadCount :
+            item.href === "/reservas" ? todayReservations : 0;
+          const showBadge = badgeCount > 0;
 
           return (
             <Link
@@ -143,10 +153,10 @@ export function Sidebar({ unreadCount = 0 }: SidebarProps) {
                   <span className="flex-1">{item.label}</span>
                   {showBadge && (
                     <Badge
-                      variant="destructive"
+                      variant={item.href === "/reservas" ? "secondary" : "destructive"}
                       className="h-5 min-w-5 justify-center rounded-full px-1 text-xs"
                     >
-                      {unreadCount > 99 ? "99+" : unreadCount}
+                      {badgeCount > 99 ? "99+" : badgeCount}
                     </Badge>
                   )}
                 </>

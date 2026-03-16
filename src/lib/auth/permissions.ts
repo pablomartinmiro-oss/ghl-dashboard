@@ -14,6 +14,9 @@ export const PERMISSIONS: Record<PermissionKey, string> = {
   "contacts:edit": "Edit contacts, add notes",
   "contacts:create": "Create new contacts",
   "contacts:delete": "Delete contacts",
+  "reservations:view": "View reservations",
+  "reservations:create": "Create and confirm reservations",
+  "reservations:edit": "Edit and cancel reservations",
   "settings:team": "Manage team members and roles",
   "settings:tenant": "Manage integrations and tenant config",
 } as const;
@@ -29,6 +32,8 @@ export const DEFAULT_ROLES: Record<string, PermissionKey[]> = {
     "pipelines:edit",
     "pipelines:create",
     "contacts:view",
+    "reservations:view",
+    "reservations:create",
   ],
   Marketing: ["analytics:view", "analytics:export", "contacts:view"],
   "VA / Admin": [
@@ -37,6 +42,9 @@ export const DEFAULT_ROLES: Record<string, PermissionKey[]> = {
     "contacts:create",
     "comms:view",
     "comms:send",
+    "reservations:view",
+    "reservations:create",
+    "reservations:edit",
   ],
 };
 

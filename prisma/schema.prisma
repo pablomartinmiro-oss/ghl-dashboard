@@ -34,6 +34,8 @@ model Tenant {
   notifications   Notification[]
   products        Product[]
   quotes          Quote[]
+  reservations    Reservation[]
+  stationCapacity StationCapacity[]
 }
 
 // ==================== USER ====================
@@ -164,6 +166,7 @@ model Quote {
 
   tenant          Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   items           QuoteItem[]
+  reservations    Reservation[]
 
   @@index([tenantId, status])
   @@index([tenantId, createdAt])
@@ -185,6 +188,82 @@ model QuoteItem {
   product     Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
 
   @@index([quoteId])
+}
+
+// ==================== RESERVATIONS ====================
+model Reservation {
+  id              String    @id @default(cuid())
+  tenantId        String
+  ghlContactId    String?
+  quoteId         String?
+
+  // Client
+  clientName      String
+  clientPhone     String
+  clientEmail     String
+  couponCode      String?
+
+  // Booking
+  source          String    // "groupon" | "caja" | "web" | "presupuesto"
+  station         String
+  activityDate    DateTime
+  schedule        String
+  language        String    @default("es")
+
+  // Participants (for group bookings)
+  participants    Json?     // array of {name, type, service, level, material}
+
+  // Services (for individual bookings)
+  services        Json?     // array of {type, quantity, modality?, level?, days?}
+
+  // Pricing
+  totalPrice      Float     @default(0)
+  discount        Float     @default(0)
+  paymentMethod   String?
+  paymentRef      String?
+
+  // Status
+  status          String    @default("pendiente") // pendiente, confirmada, sin_disponibilidad, cancelada
+
+  // Notes
+  notes           String?
+  internalNotes   String?
+
+  // Notification tracking
+  emailSentAt     DateTime?
+  whatsappSentAt  DateTime?
+  notificationType String?  // "confirmacion" | "sin_disponibilidad"
+
+  // Calendar
+  calendarFileUrl String?
+  qrCodeUrl       String?
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  createdBy       String?
+
+  tenant          Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  quote           Quote?    @relation(fields: [quoteId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId, status])
+  @@index([tenantId, activityDate])
+  @@index([tenantId, createdAt])
+}
+
+// ==================== STATION CAPACITY ====================
+model StationCapacity {
+  id          String   @id @default(cuid())
+  tenantId    String
+  station     String
+  date        DateTime
+  serviceType String   // "cursillo_adulto" | "cursillo_infantil" | "clase_particular"
+  maxCapacity Int
+  booked      Int      @default(0)
+
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, station, date, serviceType])
+  @@index([tenantId, station])
 }
 
 // ==================== WEBHOOK LOG ====================

@@ -12,6 +12,9 @@ export type PermissionKey =
   | "contacts:edit"
   | "contacts:create"
   | "contacts:delete"
+  | "reservations:view"
+  | "reservations:create"
+  | "reservations:edit"
   | "settings:team"
   | "settings:tenant";
 
