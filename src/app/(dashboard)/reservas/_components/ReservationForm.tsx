@@ -359,6 +359,7 @@ export function ReservationForm({ existingReservations, lastReservation, onCreat
               <label className="mb-1 block text-xs text-text-secondary">Fecha de actividad *</label>
               <input
                 type="date"
+                lang="es"
                 value={form.activityDate}
                 onChange={(e) => updateField("activityDate", e.target.value)}
                 className="w-full rounded-lg border border-border bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cyan"
