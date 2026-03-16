@@ -1,8 +1,8 @@
 # GHL Dashboard — Build Progress
 
 ## Current Status
-- **Phase:** PHASE N COMPLETE — Security & Polish
-- **Step:** All phases complete + Phase N (permission checks, delete reservation, empty states, real team)
+- **Phase:** PHASE P COMPLETE — Full Feature Completion
+- **Step:** All phases A-P complete (contact edit, kanban DnD, conversation assignment, opp modal, pagination, CSV import)
 - **Live URL:** https://crm-dash-prod.up.railway.app
 - **Last deployed commit:** f78b7f9 (2026-03-16)
 - **Next:** Deploy to Railway, connect real GHL sub-account
@@ -14,12 +14,12 @@ A fully functional multi-tenant CRM dashboard for Skicenter ski travel agencies,
 
 1. **Auth & Multi-Tenant** — Register new companies, invite team members, 4 RBAC roles (Owner, Manager, Sales Rep, VA/Admin)
 2. **Dashboard** — Stats cards (contacts, pipeline value, conversations), recent activity feed. Shows live GHL data when in live mode.
-3. **Contacts** — Searchable table with source/tag filters, detail page with notes. Live mode reads from synced cache.
-4. **Communications** — 3-panel chat (conversation list, message thread, contact sidebar). Live mode fetches messages from GHL.
-5. **Pipeline** — Kanban board with drag-and-drop, pipeline selector, value totals. Live mode reads from synced cache.
+3. **Contacts** — Searchable table with source/tag filters, detail page with inline editing + notes + delete. Live mode reads from synced cache.
+4. **Communications** — 3-panel chat (conversation list, message thread, contact sidebar). Conversation assignment via GHL API. Full contact data in sidebar. Live mode fetches messages from GHL.
+5. **Pipeline** — Kanban board with drag-and-drop stage movement (@dnd-kit), opportunity detail modal, pipeline selector, value totals. Live mode reads from synced cache.
 6. **Reservations** — Form + list with Groupon voucher integration (AI image reader via Claude API), voucher tracking stats.
 7. **Presupuestos** — Quotes module with line items and email preview.
-8. **Catálogo** — Product catalog CRUD.
+8. **Catálogo** — Product catalog CRUD with CSV bulk import.
 9. **Settings** — Mock/live toggle, GHL connection, team management, Groupon product mappings, sync status.
 10. **GHL Sync** — Full sync, incremental sync, webhook real-time sync, write-through with retry queue.
 
@@ -315,6 +315,48 @@ A fully functional multi-tenant CRM dashboard for Skicenter ski travel agencies,
 - Replaced hardcoded mock team members with `useTeam()` hook
 - Dropdown now shows actual team members from `/api/settings/team`
 
+### Phase O: Contact Edit & Kanban DnD (2026-03-16) ✅
+
+**Contact Editing UI** ✅
+- `useUpdateContact` + `useDeleteContact` hooks in `useGHL.ts`
+- Inline editing in ContactInfo: name, email, phone with save/cancel
+- Delete button in contact detail page with confirmation dialog
+- Permission-gated: edit requires `contacts:edit`, delete requires `contacts:delete`
+
+**Kanban Drag-and-Drop** ✅
+- `useMoveOpportunity` hook → PUT `/api/crm/opportunities/[id]`
+- Pipeline page wrapped with `DndContext` + `DragOverlay` (@dnd-kit v6)
+- KanbanColumn: droppable zones with coral ring highlight + "Soltar aquí" placeholder
+- KanbanCard: draggable cards with grab cursor, drag overlay with rotation
+- PointerSensor with 8px distance activation constraint
+
+### Phase P: Full Feature Completion (2026-03-16) ✅
+
+**Conversation Assignment** ✅
+- `PUT /api/crm/conversations/[id]/assign` endpoint with `comms:assign` permission
+- `updateConversation()` method added to GHLClient class
+- `useAssignConversation` hook with query invalidation
+- Comms page wired: AssignDropdown now calls real API instead of just toast
+- Live mode: extracts `assignedTo` from raw GHL data (was hardcoded null)
+- Full contact data now loaded in comms sidebar via `useContact(contactId)`
+
+**Opportunity Detail Modal** ✅
+- `OpportunityModal` component: name, value, status, stage, contact, dates
+- Click on KanbanCard opens modal (doesn't conflict with drag via 8px threshold)
+- Status badges: Abierta (sage), Ganada (coral), Perdida (muted-red), Abandonada (gray)
+
+**API Pagination** ✅
+- Conversations API: `page` + `limit` query params, `meta` response with totalPages
+- Opportunities API: `page` + `limit` query params, `meta` response with totalPages
+- Both with `skip`/`take` + `count` for proper pagination metadata
+
+**CSV Price Import** ✅
+- Replaced "próximamente" shell with full CSV import functionality
+- Client-side CSV parser: handles nombre, categoría, estación, precio, tipo_precio columns
+- Preview table showing parsed rows before import (max 20 visible, count for rest)
+- `POST /api/products/bulk-import` endpoint: upserts by name (update existing, create new)
+- Max 500 products per import, tenant-scoped
+
 ## DB Migrations
 1. `init` — Core models (Tenant, User, Role, Reservation, etc.)
 2. `20260316100000_phase2_auth_voucher_datamode` — Auth fields, voucher fields, dataMode, GrouponProductMapping
@@ -356,7 +398,12 @@ A fully functional multi-tenant CRM dashboard for Skicenter ski travel agencies,
 
 ## Auto-Audit Results
 
-### Phase N Final Audit (Security & Polish) — Latest
+### Phase P Final Audit (Full Feature Completion) — Latest
+- ✅ Type Check: 0 errors
+- ✅ Lint: 0 errors, 3 warnings (pre-existing underscore-prefixed vars)
+- ✅ Build: compiled clean (48+ routes)
+
+### Phase N Audit (Security & Polish)
 - ✅ Type Check: 0 errors
 - ✅ Lint: 0 errors, 3 warnings (pre-existing underscore-prefixed vars)
 - ✅ Build: compiled clean (45+ routes)

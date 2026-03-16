@@ -263,6 +263,11 @@ export class GHLClient {
     return res.data as GHLMessage;
   }
 
+  async updateConversation(id: string, data: { assignedTo?: string }): Promise<GHLConversation> {
+    const res = await this.http.put(`/conversations/${id}`, data);
+    return (res.data as { conversation: GHLConversation }).conversation ?? res.data;
+  }
+
   // ==================== PIPELINES & OPPORTUNITIES ====================
 
   async getPipelines(): Promise<GHLPipeline[]> {

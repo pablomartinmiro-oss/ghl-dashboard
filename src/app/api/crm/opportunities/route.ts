@@ -24,21 +24,27 @@ export async function GET(req: Request) {
   const { tenantId } = session.user;
   const url = new URL(req.url);
   const pipelineId = url.searchParams.get("pipelineId") ?? "";
+  const page = Math.max(1, parseInt(url.searchParams.get("page") ?? "1"));
+  const limit = Math.min(200, Math.max(1, parseInt(url.searchParams.get("limit") ?? "100")));
+  const skip = (page - 1) * limit;
   const log = logger.child({ tenantId, path: "/api/crm/opportunities" });
 
   try {
     const mode = await getDataMode(tenantId);
 
     if (mode === "live") {
-      const opportunities = await prisma.cachedOpportunity.findMany({
-        where: {
-          tenantId,
-          ...(pipelineId ? { pipelineId } : {}),
-        },
-        orderBy: { cachedAt: "desc" },
-      });
+      const where = { tenantId, ...(pipelineId ? { pipelineId } : {}) };
+      const [opportunities, total] = await Promise.all([
+        prisma.cachedOpportunity.findMany({
+          where,
+          orderBy: { cachedAt: "desc" },
+          skip,
+          take: limit,
+        }),
+        prisma.cachedOpportunity.count({ where }),
+      ]);
 
-      log.info({ count: opportunities.length, mode }, "Opportunities from cache");
+      log.info({ count: opportunities.length, mode, page }, "Opportunities from cache");
       return NextResponse.json({
         opportunities: opportunities.map((o) => ({
           id: o.id,
@@ -52,7 +58,7 @@ export async function GET(req: Request) {
           createdAt: o.cachedAt.toISOString(),
           status: o.status ?? "open",
         })),
-        meta: { total: opportunities.length, currentPage: 1, nextPage: null },
+        meta: { total, page, limit, totalPages: Math.ceil(total / limit) },
       });
     }
 

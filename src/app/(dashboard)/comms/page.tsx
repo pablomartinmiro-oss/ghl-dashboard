@@ -3,7 +3,7 @@
 import { useState, useMemo } from "react";
 import { useSession } from "next-auth/react";
 import { MessageSquare } from "lucide-react";
-import { useConversations, useMessages, useSendMessage } from "@/hooks/useGHL";
+import { useConversations, useMessages, useSendMessage, useAssignConversation, useContact } from "@/hooks/useGHL";
 import { usePermissions } from "@/hooks/usePermissions";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { ConversationList } from "./_components/ConversationList";
@@ -13,7 +13,6 @@ import { ContactSidebar } from "./_components/ContactSidebar";
 import { AssignDropdown } from "./_components/AssignDropdown";
 import { ChannelBadge } from "./_components/ChannelBadge";
 import { toast } from "sonner";
-import type { GHLContact } from "@/lib/ghl/types";
 
 export default function CommsPage() {
   const { data: session } = useSession();
@@ -23,30 +22,20 @@ export default function CommsPage() {
   const { data: convoData, isLoading: convosLoading } = useConversations();
   const { data: msgData, isLoading: msgsLoading } = useMessages(selectedId);
   const sendMessage = useSendMessage(selectedId ?? "");
+  const assignConversation = useAssignConversation();
 
   const conversations = useMemo(() => convoData?.conversations ?? [], [convoData]);
   const messages = msgData?.messages ?? [];
 
-  // Find selected conversation to get contactId
   const selectedConvo = useMemo(
     () => conversations.find((c) => c.id === selectedId),
     [conversations, selectedId]
   );
 
-  // Build a minimal contact object from conversation data for the sidebar
-  // In production, this would fetch the full contact from the API
-  const sidebarContact: GHLContact | null = selectedConvo
-    ? {
-        id: selectedConvo.contactId,
-        firstName: selectedConvo.contactName.split(" ")[0] ?? "",
-        lastName: selectedConvo.contactName.split(" ").slice(1).join(" ") ?? "",
-        email: null,
-        phone: null,
-        tags: [],
-        source: null,
-        dateAdded: "",
-      }
-    : null;
+  // Fetch full contact data for sidebar
+  const contactId = selectedConvo?.contactId ?? null;
+  const { data: contactData, isLoading: contactLoading } = useContact(contactId);
+  const sidebarContact = contactData?.contact ?? null;
 
   function handleSend(message: string) {
     sendMessage.mutate(message, {
@@ -54,6 +43,17 @@ export default function CommsPage() {
         toast.error("Error al enviar el mensaje. Inténtalo de nuevo.");
       },
     });
+  }
+
+  function handleAssign(userId: string | null) {
+    if (!selectedId) return;
+    assignConversation.mutate(
+      { conversationId: selectedId, assignedTo: userId },
+      {
+        onSuccess: () => toast.success("Asignación actualizada"),
+        onError: () => toast.error("Error al asignar la conversación"),
+      }
+    );
   }
 
   return (
@@ -85,9 +85,8 @@ export default function CommsPage() {
             {can("comms:assign") && (
               <AssignDropdown
                 currentAssignee={selectedConvo?.assignedTo ?? null}
-                onAssign={() => {
-                  toast.info("Asignación actualizada");
-                }}
+                onAssign={handleAssign}
+                disabled={assignConversation.isPending}
               />
             )}
           </div>
@@ -115,7 +114,7 @@ export default function CommsPage() {
         <div className="hidden lg:block">
           <ContactSidebar
             contact={sidebarContact}
-            loading={msgsLoading}
+            loading={contactLoading || msgsLoading}
           />
         </div>
       )}

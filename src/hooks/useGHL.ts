@@ -109,6 +109,24 @@ export function useSendMessage(conversationId: string) {
   });
 }
 
+export function useAssignConversation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ conversationId, assignedTo }: { conversationId: string; assignedTo: string | null }) => {
+      const res = await fetch(`/api/crm/conversations/${conversationId}/assign`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ assignedTo }),
+      });
+      if (!res.ok) throw new Error("Failed to assign conversation");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["conversations"] });
+    },
+  });
+}
+
 // ─── Contacts ────────────────────────────────────────────
 
 export function useContacts() {
@@ -190,6 +208,41 @@ export function useAddNote(contactId: string) {
   });
 }
 
+export function useUpdateContact(contactId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: Record<string, unknown>) => {
+      const res = await fetch(`/api/crm/contacts/${contactId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) throw new Error("Failed to update contact");
+      return res.json() as Promise<{ contact: GHLContact }>;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["contact", contactId] });
+      queryClient.invalidateQueries({ queryKey: ["contacts"] });
+    },
+  });
+}
+
+export function useDeleteContact(contactId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
+      const res = await fetch(`/api/crm/contacts/${contactId}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) throw new Error("Failed to delete contact");
+      return res.json() as Promise<{ success: boolean }>;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["contacts"] });
+    },
+  });
+}
+
 // ─── Pipelines ───────────────────────────────────────────
 
 export function usePipelines() {
@@ -205,5 +258,23 @@ export function useOpportunities(pipelineId: string | null) {
     queryFn: () =>
       fetchJSON(`/api/crm/opportunities?pipelineId=${pipelineId}`),
     enabled: !!pipelineId,
+  });
+}
+
+export function useMoveOpportunity() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, stageId }: { id: string; stageId: string }) => {
+      const res = await fetch(`/api/crm/opportunities/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ stageId }),
+      });
+      if (!res.ok) throw new Error("Failed to move opportunity");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["opportunities"] });
+    },
   });
 }

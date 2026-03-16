@@ -1,25 +1,40 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { Kanban } from "lucide-react";
-import { usePipelines, useOpportunities } from "@/hooks/useGHL";
+import {
+  DndContext,
+  DragOverlay,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragStartEvent,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import { usePipelines, useOpportunities, useMoveOpportunity } from "@/hooks/useGHL";
 import { KanbanSkeleton } from "@/components/shared/LoadingSkeleton";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { KanbanColumn } from "./_components/KanbanColumn";
+import { KanbanCard } from "./_components/KanbanCard";
 import { PipelineSelector } from "./_components/PipelineSelector";
+import { OpportunityModal } from "./_components/OpportunityModal";
+import { toast } from "sonner";
+import type { GHLOpportunity } from "@/lib/ghl/types";
 
 export default function PipelinePage() {
   const { data: pipelineData, isLoading: pipelinesLoading } = usePipelines();
   const pipelines = useMemo(() => pipelineData?.pipelines ?? [], [pipelineData]);
 
   const [userSelectedId, setUserSelectedId] = useState<string | null>(null);
+  const [activeOpp, setActiveOpp] = useState<GHLOpportunity | null>(null);
+  const [selectedOpp, setSelectedOpp] = useState<GHLOpportunity | null>(null);
 
-  // Derive effective pipeline ID: user selection or first pipeline
   const selectedPipelineId = userSelectedId ?? pipelines[0]?.id ?? null;
 
   const { data: oppData, isLoading: oppsLoading } =
     useOpportunities(selectedPipelineId);
   const opportunities = useMemo(() => oppData?.opportunities ?? [], [oppData]);
+  const moveOpp = useMoveOpportunity();
 
   const selectedPipeline = useMemo(
     () => pipelines.find((p) => p.id === selectedPipelineId),
@@ -30,7 +45,6 @@ export default function PipelinePage() {
     [selectedPipeline]
   );
 
-  // Group opportunities by stage
   const oppsByStage = useMemo(() => {
     const map = new Map<string, typeof opportunities>();
     for (const stage of stages) {
@@ -46,6 +60,34 @@ export default function PipelinePage() {
     (sum, o) => sum + o.monetaryValue,
     0
   );
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
+  );
+
+  const handleDragStart = useCallback((event: DragStartEvent) => {
+    const opp = opportunities.find((o) => o.id === event.active.id);
+    setActiveOpp(opp ?? null);
+  }, [opportunities]);
+
+  const handleDragEnd = useCallback((event: DragEndEvent) => {
+    setActiveOpp(null);
+    const { active, over } = event;
+    if (!over) return;
+
+    const oppId = active.id as string;
+    const newStageId = over.id as string;
+    const opp = opportunities.find((o) => o.id === oppId);
+    if (!opp || opp.pipelineStageId === newStageId) return;
+
+    moveOpp.mutate(
+      { id: oppId, stageId: newStageId },
+      {
+        onSuccess: () => toast.success("Oportunidad movida"),
+        onError: () => toast.error("Error al mover la oportunidad"),
+      }
+    );
+  }, [opportunities, moveOpp]);
 
   const loading = pipelinesLoading || oppsLoading;
 
@@ -83,17 +125,31 @@ export default function PipelinePage() {
           description="Las etapas aparecerán aquí una vez sincronizadas desde GHL"
         />
       ) : (
-        <div className="flex gap-4 overflow-x-auto pb-4">
-          {stages
-            .sort((a, b) => a.position - b.position)
-            .map((stage) => (
-              <KanbanColumn
-                key={stage.id}
-                stage={stage}
-                opportunities={oppsByStage.get(stage.id) ?? []}
-              />
-            ))}
-        </div>
+        <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+          <div className="flex gap-4 overflow-x-auto pb-4">
+            {stages
+              .sort((a, b) => a.position - b.position)
+              .map((stage) => (
+                <KanbanColumn
+                  key={stage.id}
+                  stage={stage}
+                  opportunities={oppsByStage.get(stage.id) ?? []}
+                  onCardClick={setSelectedOpp}
+                />
+              ))}
+          </div>
+          <DragOverlay>
+            {activeOpp ? <KanbanCard opportunity={activeOpp} isDragOverlay /> : null}
+          </DragOverlay>
+        </DndContext>
+      )}
+
+      {selectedOpp && (
+        <OpportunityModal
+          opportunity={selectedOpp}
+          stageName={stages.find((s) => s.id === selectedOpp.pipelineStageId)?.name ?? ""}
+          onClose={() => setSelectedOpp(null)}
+        />
       )}
     </div>
   );
