@@ -2,19 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth/config";
 import { prisma } from "@/lib/db";
 import { logger } from "@/lib/logger";
-import { hasPermission } from "@/lib/auth/permissions";
 import { fullSync } from "@/lib/ghl/sync";
-import type { PermissionKey } from "@/types/auth";
 
 export async function GET() {
   const session = await auth();
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const permissions = session.user.permissions as PermissionKey[];
-  if (!hasPermission(permissions, "settings:tenant")) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   const { tenantId } = session.user;
@@ -55,11 +48,6 @@ export async function PATCH(request: NextRequest) {
   const session = await auth();
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const permissions = session.user.permissions as PermissionKey[];
-  if (!hasPermission(permissions, "settings:tenant")) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   const { tenantId } = session.user;

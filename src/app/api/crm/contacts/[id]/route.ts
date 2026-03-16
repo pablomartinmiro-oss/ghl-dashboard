@@ -8,8 +8,6 @@ import { prisma } from "@/lib/db";
 import { getDataMode } from "@/lib/data/getDataMode";
 import { mapContactToCache } from "@/lib/ghl/sync";
 import { logger } from "@/lib/logger";
-import { hasPermission } from "@/lib/auth/permissions";
-import type { PermissionKey } from "@/types/auth";
 
 export async function GET(
   _req: Request,
@@ -18,11 +16,6 @@ export async function GET(
   const session = await auth();
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const permissions = session.user.permissions as PermissionKey[];
-  if (!hasPermission(permissions, "contacts:view")) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   const { tenantId } = session.user;
@@ -88,11 +81,6 @@ export async function PUT(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const permissions = session.user.permissions as PermissionKey[];
-  if (!hasPermission(permissions, "contacts:edit")) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
-
   const { tenantId } = session.user;
   const { id } = await params;
   const body = await req.json();
@@ -145,11 +133,6 @@ export async function DELETE(
   const session = await auth();
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const permissions = session.user.permissions as PermissionKey[];
-  if (!hasPermission(permissions, "contacts:delete")) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   const { tenantId } = session.user;

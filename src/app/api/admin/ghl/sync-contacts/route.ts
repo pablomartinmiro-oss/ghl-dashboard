@@ -1,9 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth/config";
-import { hasPermission } from "@/lib/auth/permissions";
 import { fullSync } from "@/lib/ghl/sync";
 import { logger } from "@/lib/logger";
-import type { PermissionKey } from "@/types/auth";
 
 /**
  * Legacy sync endpoint — redirects to full-sync.
@@ -13,10 +11,6 @@ export async function POST() {
   const session = await auth();
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  if (!hasPermission(session.user.permissions as PermissionKey[], "settings:tenant")) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   const { tenantId } = session.user;

@@ -2,8 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth/config";
 import { prisma } from "@/lib/db";
 import { logger } from "@/lib/logger";
-import { hasPermission } from "@/lib/auth/permissions";
-import type { PermissionKey } from "@/types/auth";
 
 export async function PATCH(
   request: NextRequest,
@@ -15,9 +13,6 @@ export async function PATCH(
   }
 
   const { tenantId, permissions } = session.user;
-  if (!hasPermission(permissions as PermissionKey[], "settings:tenant")) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
 
   const { id } = await params;
   const log = logger.child({ tenantId, path: `/api/season-calendar/${id}` });
@@ -63,9 +58,6 @@ export async function DELETE(
   }
 
   const { tenantId, permissions } = session.user;
-  if (!hasPermission(permissions as PermissionKey[], "settings:tenant")) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
 
   const { id } = await params;
   const log = logger.child({ tenantId, path: `/api/season-calendar/${id}` });

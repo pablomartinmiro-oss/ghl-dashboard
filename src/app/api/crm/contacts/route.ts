@@ -8,19 +8,12 @@ import { prisma } from "@/lib/db";
 import { getDataMode } from "@/lib/data/getDataMode";
 import { mapContactToCache } from "@/lib/ghl/sync";
 import { logger } from "@/lib/logger";
-import { hasPermission } from "@/lib/auth/permissions";
-import type { PermissionKey } from "@/types/auth";
 import type { GHLContactsResponse } from "@/lib/ghl/types";
 
 export async function GET(req: Request) {
   const session = await auth();
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const permissions = session.user.permissions as PermissionKey[];
-  if (!hasPermission(permissions, "contacts:view")) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   const { tenantId } = session.user;
@@ -104,11 +97,6 @@ export async function POST(req: Request) {
   const session = await auth();
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const permissions = session.user.permissions as PermissionKey[];
-  if (!hasPermission(permissions, "contacts:create")) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   const { tenantId } = session.user;

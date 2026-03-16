@@ -4,8 +4,6 @@ import { createGHLClient } from "@/lib/ghl/client";
 import { getGHLClient } from "@/lib/ghl/api";
 import { getDataMode } from "@/lib/data/getDataMode";
 import { logger } from "@/lib/logger";
-import { hasPermission } from "@/lib/auth/permissions";
-import type { PermissionKey } from "@/types/auth";
 import type { GHLNotesResponse } from "@/lib/ghl/types";
 
 export async function GET(
@@ -15,11 +13,6 @@ export async function GET(
   const session = await auth();
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const permissions = session.user.permissions as PermissionKey[];
-  if (!hasPermission(permissions, "contacts:view")) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   const { tenantId } = session.user;
@@ -53,11 +46,6 @@ export async function POST(
   const session = await auth();
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const permissions = session.user.permissions as PermissionKey[];
-  if (!hasPermission(permissions, "contacts:edit")) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   const { tenantId } = session.user;

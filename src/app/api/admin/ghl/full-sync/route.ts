@@ -1,9 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth/config";
-import { hasPermission } from "@/lib/auth/permissions";
 import { fullSync } from "@/lib/ghl/sync";
 import { logger } from "@/lib/logger";
-import type { PermissionKey } from "@/types/auth";
 
 const log = logger.child({ route: "/api/admin/ghl/full-sync" });
 
@@ -11,11 +9,6 @@ export async function POST() {
   const session = await auth();
   if (!session?.user?.tenantId) {
     return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-  }
-
-  const perms = (session.user.permissions ?? []) as PermissionKey[];
-  if (!hasPermission(perms, "settings:tenant")) {
-    return NextResponse.json({ error: "Sin permisos" }, { status: 403 });
   }
 
   const tenantId = session.user.tenantId;

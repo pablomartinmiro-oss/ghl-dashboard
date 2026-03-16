@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth/config";
-import { hasPermission } from "@/lib/auth/permissions";
 import { getGHLClient } from "@/lib/ghl/api";
 import { logger } from "@/lib/logger";
-import type { PermissionKey } from "@/types/auth";
 
 const SKICENTER_FIELDS = [
   { name: "Estación preferida", fieldKey: "estacion_preferida", dataType: "TEXT" },
@@ -17,10 +15,6 @@ export async function POST(request: NextRequest) {
   const session = await auth();
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  if (!hasPermission(session.user.permissions as PermissionKey[], "settings:tenant")) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   const { tenantId } = session.user;

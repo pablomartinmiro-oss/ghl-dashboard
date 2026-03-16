@@ -6,8 +6,6 @@ import { getCachedOrFetch } from "@/lib/cache/redis";
 import { CacheKeys, CacheTTL } from "@/lib/cache/keys";
 import { getDataMode } from "@/lib/data/getDataMode";
 import { logger } from "@/lib/logger";
-import { hasPermission } from "@/lib/auth/permissions";
-import type { PermissionKey } from "@/types/auth";
 import type { GHLMessagesResponse } from "@/lib/ghl/types";
 
 export async function GET(
@@ -17,11 +15,6 @@ export async function GET(
   const session = await auth();
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const permissions = session.user.permissions as PermissionKey[];
-  if (!hasPermission(permissions, "comms:view")) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   const { tenantId } = session.user;
@@ -68,11 +61,6 @@ export async function POST(
   const session = await auth();
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const permissions = session.user.permissions as PermissionKey[];
-  if (!hasPermission(permissions, "comms:send")) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   const { tenantId } = session.user;

@@ -4,8 +4,6 @@ import { getGHLClient } from "@/lib/ghl/api";
 import { prisma } from "@/lib/db";
 import { getDataMode } from "@/lib/data/getDataMode";
 import { logger } from "@/lib/logger";
-import { hasPermission } from "@/lib/auth/permissions";
-import type { PermissionKey } from "@/types/auth";
 
 export async function PUT(
   req: Request,
@@ -14,11 +12,6 @@ export async function PUT(
   const session = await auth();
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const permissions = session.user.permissions as PermissionKey[];
-  if (!hasPermission(permissions, "pipelines:edit")) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   const { tenantId } = session.user;
