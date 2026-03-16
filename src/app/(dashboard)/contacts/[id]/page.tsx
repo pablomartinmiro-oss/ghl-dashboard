@@ -29,10 +29,10 @@ export default function ContactDetailPage({ params }: ContactDetailPageProps) {
   function handleAddNote(body: string) {
     addNote.mutate(body, {
       onError: () => {
-        toast.error("Failed to add note. Please try again.");
+        toast.error("Error al añadir la nota. Inténtalo de nuevo.");
       },
       onSuccess: () => {
-        toast.success("Note added");
+        toast.success("Nota añadida");
       },
     });
   }
@@ -42,7 +42,7 @@ export default function ContactDetailPage({ params }: ContactDetailPageProps) {
       <div className="flex items-center gap-3">
         <Button variant="ghost" size="sm" render={<Link href="/contacts" />}>
           <ArrowLeft className="h-4 w-4" />
-          Back
+          Volver
         </Button>
       </div>
 
@@ -53,7 +53,7 @@ export default function ContactDetailPage({ params }: ContactDetailPageProps) {
           <ContactInfo contact={contact} />
 
           <div className="space-y-4">
-            <h2 className="text-lg font-semibold text-text-primary">Notes</h2>
+            <h2 className="text-lg font-semibold text-text-primary">Notas</h2>
 
             {can("contacts:edit") && (
               <AddNoteForm
@@ -66,7 +66,7 @@ export default function ContactDetailPage({ params }: ContactDetailPageProps) {
           </div>
         </div>
       ) : (
-        <p className="text-text-secondary">Contact not found.</p>
+        <p className="text-text-secondary">Contacto no encontrado.</p>
       )}
     </div>
   );

@@ -12,7 +12,7 @@ interface GHLConnectionCardProps {
 }
 
 function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString("en-US", {
+  return new Date(dateStr).toLocaleDateString("es-ES", {
     month: "long",
     day: "numeric",
     year: "numeric",
@@ -45,14 +45,14 @@ export function GHLConnectionCard({
   return (
     <div className="rounded-[14px] bg-white p-5 shadow-[0_1px_3px_rgba(0,0,0,0.08)]">
       <div className="mb-4 flex items-center justify-between">
-        <h3 className="text-base font-semibold text-text-primary">GHL Connection</h3>
+        <h3 className="text-base font-semibold text-text-primary">Conexión GHL</h3>
         <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
           isConnected ? "bg-success/10 text-success" : "bg-danger/10 text-danger"
         }`}>
-          {isConnected ? "Connected" : "Not Connected"}
+          {isConnected ? "Conectado" : "No conectado"}
         </span>
       </div>
-      <p className="mb-4 text-sm text-text-secondary">Manage your GoHighLevel integration</p>
+      <p className="mb-4 text-sm text-text-secondary">Gestiona tu integración con GoHighLevel</p>
       {isConnected ? (
         <div className="space-y-4">
           <div className="grid gap-3 text-sm">
@@ -62,7 +62,7 @@ export function GHLConnectionCard({
             </div>
             {ghlConnectedAt && (
               <div className="text-text-secondary">
-                Connected {formatDate(ghlConnectedAt)}
+                Conectado el {formatDate(ghlConnectedAt)}
               </div>
             )}
             {ghlTokenExpiry && (
@@ -73,7 +73,7 @@ export function GHLConnectionCard({
                   <CheckCircle className="h-4 w-4 text-success" />
                 )}
                 <span className="text-text-primary">
-                  Token {isTokenExpired ? "expired" : "expires"}{" "}
+                  Token {isTokenExpired ? "expiró" : "expira"}{" "}
                   {formatDate(ghlTokenExpiry)}
                 </span>
               </div>
@@ -88,7 +88,7 @@ export function GHLConnectionCard({
             }}
           >
             <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
-            Reconnect
+            Reconectar
           </Button>
         </div>
       ) : (
@@ -98,7 +98,7 @@ export function GHLConnectionCard({
             window.location.href = "/api/crm/oauth/authorize";
           }}
         >
-          Connect GoHighLevel
+          Conectar GoHighLevel
         </Button>
       )}
     </div>

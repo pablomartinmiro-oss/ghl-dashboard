@@ -12,7 +12,7 @@ interface NotesListProps {
 
 function formatDate(dateStr: string): string {
   const d = new Date(dateStr);
-  return d.toLocaleDateString("en-US", {
+  return d.toLocaleDateString("es-ES", {
     month: "short",
     day: "numeric",
     year: "numeric",
@@ -40,8 +40,8 @@ export function NotesList({ notes, loading }: NotesListProps) {
     return (
       <EmptyState
         icon={FileText}
-        title="No notes yet"
-        description="Add a note to keep track of interactions with this contact"
+        title="Sin notas aún"
+        description="Añade una nota para registrar las interacciones con este contacto"
       />
     );
   }

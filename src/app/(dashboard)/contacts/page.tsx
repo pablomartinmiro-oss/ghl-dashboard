@@ -44,11 +44,11 @@ export default function ContactsPage() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-text-primary">Contacts</h1>
-          <p className="text-sm text-text-secondary">Manage your contact database</p>
+          <h1 className="text-2xl font-bold tracking-tight text-text-primary">Contactos</h1>
+          <p className="text-sm text-text-secondary">Gestiona tu base de datos de contactos</p>
         </div>
         <span className="text-sm text-text-secondary">
-          {filtered.length} of {contacts.length} contacts
+          {filtered.length} de {contacts.length} contactos
         </span>
       </div>
 
@@ -68,11 +68,11 @@ export default function ContactsPage() {
       ) : filtered.length === 0 ? (
         <EmptyState
           icon={Users}
-          title="No contacts found"
+          title="No se encontraron contactos"
           description={
             search || sourceFilter
-              ? "Try adjusting your search or filters"
-              : "Contacts will appear here once synced from GHL"
+              ? "Prueba ajustando tu búsqueda o filtros"
+              : "Los contactos aparecerán aquí una vez sincronizados con GHL"
           }
         />
       ) : (

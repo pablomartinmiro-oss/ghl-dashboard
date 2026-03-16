@@ -15,7 +15,7 @@ interface ContactInfoProps {
 }
 
 function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString("en-US", {
+  return new Date(dateStr).toLocaleDateString("es-ES", {
     month: "long",
     day: "numeric",
     year: "numeric",
@@ -56,7 +56,7 @@ export function ContactInfo({ contact }: ContactInfoProps) {
           )}
           <div className="flex items-center gap-2 text-muted-foreground">
             <Calendar className="h-4 w-4" />
-            Added {formatDate(contact.dateAdded)}
+            Añadido {formatDate(contact.dateAdded)}
           </div>
         </div>
 

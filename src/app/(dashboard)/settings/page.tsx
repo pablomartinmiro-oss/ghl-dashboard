@@ -14,12 +14,12 @@ function SettingsToast() {
   const searchParams = useSearchParams();
   useEffect(() => {
     if (searchParams.get("ghl_connected") === "true") {
-      toast.success("GoHighLevel connected successfully");
+      toast.success("GoHighLevel conectado correctamente");
       // Clean up URL
       window.history.replaceState({}, "", "/settings");
     }
     if (searchParams.get("error") === "oauth_failed") {
-      toast.error("Failed to connect GoHighLevel. Please try again.");
+      toast.error("Error al conectar GoHighLevel. Inténtalo de nuevo.");
       window.history.replaceState({}, "", "/settings");
     }
   }, [searchParams]);
@@ -40,8 +40,8 @@ export default function SettingsPage() {
     updateRole.mutate(
       { userId, roleId },
       {
-        onSuccess: () => toast.success("Role updated"),
-        onError: () => toast.error("Failed to update role"),
+        onSuccess: () => toast.success("Rol actualizado"),
+        onError: () => toast.error("Error al actualizar el rol"),
       }
     );
   }
@@ -52,9 +52,9 @@ export default function SettingsPage() {
         <SettingsToast />
       </Suspense>
       <div>
-        <h1 className="text-2xl font-bold tracking-tight text-text-primary">Settings</h1>
+        <h1 className="text-2xl font-bold tracking-tight text-text-primary">Ajustes</h1>
         <p className="text-sm text-text-secondary">
-          Manage your account and team
+          Gestiona tu cuenta y equipo
         </p>
       </div>
 
@@ -78,9 +78,9 @@ export default function SettingsPage() {
       <RoleGate permission="settings:team">
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold">Team Members</h2>
+            <h2 className="text-lg font-semibold">Equipo</h2>
             <span className="text-sm text-muted-foreground">
-              {users.length} members
+              {users.length} miembros
             </span>
           </div>
           <TeamTable

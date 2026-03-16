@@ -18,7 +18,7 @@ export function SourceFilter({ sources, selected, onSelect }: SourceFilterProps)
             : "bg-muted text-text-secondary hover:bg-cyan-light/50"
         }`}
       >
-        All
+        Todos
       </button>
       {sources.map((source) => (
         <button

@@ -19,7 +19,7 @@ interface ContactsTableProps {
 
 function formatDate(dateStr: string): string {
   const d = new Date(dateStr);
-  return d.toLocaleDateString("en-US", {
+  return d.toLocaleDateString("es-ES", {
     month: "short",
     day: "numeric",
     year: "numeric",
@@ -31,12 +31,12 @@ export function ContactsTable({ contacts }: ContactsTableProps) {
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead>Name</TableHead>
+          <TableHead>Nombre</TableHead>
           <TableHead>Email</TableHead>
-          <TableHead>Phone</TableHead>
-          <TableHead>Source</TableHead>
-          <TableHead>Tags</TableHead>
-          <TableHead>Date Added</TableHead>
+          <TableHead>Teléfono</TableHead>
+          <TableHead>Origen</TableHead>
+          <TableHead>Etiquetas</TableHead>
+          <TableHead>Fecha</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>

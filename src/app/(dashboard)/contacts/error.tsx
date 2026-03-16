@@ -16,14 +16,14 @@ export default function ContactsError({
         <AlertTriangle className="h-6 w-6 text-destructive" />
       </div>
       <div>
-        <h3 className="text-lg font-semibold">Failed to load contacts</h3>
+        <h3 className="text-lg font-semibold">Error al cargar contactos</h3>
         <p className="mt-1 text-sm text-muted-foreground">
-          {error.message || "An unexpected error occurred"}
+          {error.message || "Ha ocurrido un error inesperado"}
         </p>
       </div>
       <Button onClick={reset} variant="outline" className="gap-2">
         <RotateCcw className="h-4 w-4" />
-        Try again
+        Reintentar
       </Button>
     </div>
   );

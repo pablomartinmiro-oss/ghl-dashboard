@@ -36,8 +36,8 @@ interface TeamTableProps {
 }
 
 function formatDate(dateStr: string | null): string {
-  if (!dateStr) return "Never";
-  return new Date(dateStr).toLocaleDateString("en-US", {
+  if (!dateStr) return "Nunca";
+  return new Date(dateStr).toLocaleDateString("es-ES", {
     month: "short",
     day: "numeric",
     year: "numeric",
@@ -58,11 +58,11 @@ export function TeamTable({
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Name</TableHead>
+            <TableHead>Nombre</TableHead>
             <TableHead>Email</TableHead>
-            <TableHead>Role</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Last Login</TableHead>
+            <TableHead>Rol</TableHead>
+            <TableHead>Estado</TableHead>
+            <TableHead>Último acceso</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -93,7 +93,7 @@ export function TeamTable({
               </TableCell>
               <TableCell>
                 <Badge variant={user.isActive ? "default" : "outline"}>
-                  {user.isActive ? "Active" : "Inactive"}
+                  {user.isActive ? "Activo" : "Inactivo"}
                 </Badge>
               </TableCell>
               <TableCell className="text-text-secondary">
