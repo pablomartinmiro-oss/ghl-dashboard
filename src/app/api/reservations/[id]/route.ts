@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth/config";
+import { hasPermission } from "@/lib/auth/permissions";
+import type { PermissionKey } from "@/types/auth";
 import { prisma } from "@/lib/db";
 import { logger } from "@/lib/logger";
 
@@ -10,6 +12,9 @@ export async function GET(
   const session = await auth();
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  if (!hasPermission(session.user.permissions as PermissionKey[], "reservations:view")) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   const { id } = await params;
@@ -39,6 +44,9 @@ export async function PATCH(
   const session = await auth();
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  if (!hasPermission(session.user.permissions as PermissionKey[], "reservations:edit")) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   const { id } = await params;
@@ -93,5 +101,39 @@ export async function PATCH(
   } catch (error) {
     log.error({ error }, "Failed to update reservation");
     return NextResponse.json({ error: "Failed to update reservation" }, { status: 500 });
+  }
+}
+
+export async function DELETE(
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const session = await auth();
+  if (!session?.user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  if (!hasPermission(session.user.permissions as PermissionKey[], "reservations:edit")) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  const { id } = await params;
+  const { tenantId } = session.user;
+  const log = logger.child({ tenantId, reservationId: id });
+
+  try {
+    const existing = await prisma.reservation.findFirst({
+      where: { id, tenantId },
+    });
+    if (!existing) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+
+    await prisma.reservation.delete({ where: { id } });
+
+    log.info({ reservationId: id }, "Reservation deleted");
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    log.error({ error }, "Failed to delete reservation");
+    return NextResponse.json({ error: "Failed to delete reservation" }, { status: 500 });
   }
 }

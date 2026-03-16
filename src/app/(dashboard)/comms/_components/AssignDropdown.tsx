@@ -8,6 +8,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
+import { useTeam } from "@/hooks/useSettings";
 
 interface AssignDropdownProps {
   currentAssignee: string | null;
@@ -15,19 +16,15 @@ interface AssignDropdownProps {
   disabled?: boolean;
 }
 
-// In production, team members would be fetched from the API.
-// For now, use placeholder team members from mock data.
-const TEAM_MEMBERS = [
-  { id: "mock-user-1", name: "Carlos (Ventas)" },
-  { id: "mock-user-2", name: "María (Soporte)" },
-];
-
 export function AssignDropdown({
   currentAssignee,
   onAssign,
   disabled = false,
 }: AssignDropdownProps) {
-  const assigneeName = TEAM_MEMBERS.find(
+  const { data } = useTeam();
+  const members = data?.users ?? [];
+
+  const assigneeName = members.find(
     (m) => m.id === currentAssignee
   )?.name;
 
@@ -43,12 +40,12 @@ export function AssignDropdown({
         <DropdownMenuItem onClick={() => onAssign(null)}>
           Sin asignar
         </DropdownMenuItem>
-        {TEAM_MEMBERS.map((member) => (
+        {members.map((member) => (
           <DropdownMenuItem
             key={member.id}
             onClick={() => onAssign(member.id)}
           >
-            {member.name}
+            {member.name ?? member.email}
           </DropdownMenuItem>
         ))}
       </DropdownMenuContent>

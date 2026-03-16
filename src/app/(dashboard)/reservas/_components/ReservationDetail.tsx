@@ -4,9 +4,9 @@ import { useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { CheckCircle, XCircle, ArrowLeft, X, Clock } from "lucide-react";
+import { CheckCircle, XCircle, ArrowLeft, X, Clock, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import { useUpdateReservation, type Reservation } from "@/hooks/useReservations";
+import { useUpdateReservation, useDeleteReservation, type Reservation } from "@/hooks/useReservations";
 import { STATUS_CONFIG, SOURCE_CONFIG, formatDate } from "./constants";
 import { DetailSections } from "./DetailSections";
 
@@ -32,6 +32,7 @@ export function ReservationDetail({ reservation, onBack }: ReservationDetailProp
     schedule: reservation.schedule,
   });
   const updateReservation = useUpdateReservation();
+  const deleteReservation = useDeleteReservation();
 
   const statusCfg = STATUS_CONFIG[reservation.status as keyof typeof STATUS_CONFIG] ?? STATUS_CONFIG.pendiente;
   const sourceCfg = SOURCE_CONFIG[reservation.source as keyof typeof SOURCE_CONFIG];
@@ -84,6 +85,14 @@ export function ReservationDetail({ reservation, onBack }: ReservationDetailProp
     toast.success(`${label} copiado`);
   }, []);
 
+  const handleDelete = useCallback(() => {
+    if (!confirm("¿Eliminar esta reserva? Esta acción no se puede deshacer.")) return;
+    deleteReservation.mutate(reservation.id, {
+      onSuccess: () => { toast.success("Reserva eliminada"); onBack(); },
+      onError: () => toast.error("Error al eliminar"),
+    });
+  }, [reservation.id, deleteReservation, onBack]);
+
   const finalPrice = reservation.discount > 0
     ? reservation.totalPrice * (1 - reservation.discount / 100)
     : reservation.totalPrice;
@@ -128,6 +137,9 @@ export function ReservationDetail({ reservation, onBack }: ReservationDetailProp
               <Clock className="h-3.5 w-3.5" /> Pendiente
             </Button>
           )}
+          <Button size="sm" variant="outline" className="ml-auto gap-1.5 text-muted-red border-muted-red/30 hover:bg-muted-red-light" onClick={handleDelete} disabled={deleteReservation.isPending}>
+            <Trash2 className="h-3.5 w-3.5" /> Eliminar
+          </Button>
         </div>
 
         <DetailSections

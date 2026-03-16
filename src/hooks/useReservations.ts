@@ -167,6 +167,20 @@ export function useDuplicateReservation() {
   });
 }
 
+export function useDeleteReservation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) =>
+      fetchJSON<{ success: boolean }>(`/api/reservations/${id}`, {
+        method: "DELETE",
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["reservations"] });
+      qc.invalidateQueries({ queryKey: ["reservation-stats"] });
+    },
+  });
+}
+
 export function useCreateFromQuote() {
   const qc = useQueryClient();
   return useMutation({

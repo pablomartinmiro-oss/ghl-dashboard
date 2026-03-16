@@ -179,6 +179,12 @@ export function ProductTable({ products, onEdit, onDelete, onAdd }: ProductTable
       </div>
 
       {/* Tables by category */}
+      {Object.keys(grouped).length === 0 && (
+        <div className="rounded-2xl bg-white shadow-[0_1px_3px_rgba(0,0,0,0.04)] p-12 text-center">
+          <p className="text-sm text-text-secondary">No se encontraron productos</p>
+          <p className="text-xs text-text-secondary mt-1">Prueba a cambiar los filtros o añade un nuevo producto</p>
+        </div>
+      )}
       {Object.entries(grouped).map(([category, categoryProducts]) => (
         <div key={category} className="rounded-2xl bg-white shadow-[0_1px_3px_rgba(0,0,0,0.04)] overflow-hidden">
           <div className="border-b border-border px-6 py-4">
