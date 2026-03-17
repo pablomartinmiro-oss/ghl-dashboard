@@ -48,9 +48,16 @@ function getPrivateLessonPrice(
   return 0;
 }
 
+/** Check if the matrix is a bundle (pack) — stores component refs, not prices */
+function isBundleMatrix(matrix: unknown): boolean {
+  if (!matrix || typeof matrix !== "object") return false;
+  return (matrix as Record<string, unknown>).type === "bundle";
+}
+
 /**
  * Get a single product's price for given parameters.
  * Pure function — safe for client components.
+ * Bundle products return 0 — their price is the sum of components.
  */
 export function getProductPrice(
   pricingMatrix: unknown,
@@ -61,10 +68,17 @@ export function getProductPrice(
   people: number = 1
 ): number {
   if (!pricingMatrix) return 0;
+  if (isBundleMatrix(pricingMatrix)) return 0;
   if (category === "clase_particular" && isPrivateLessonMatrix(pricingMatrix)) {
     return getPrivateLessonPrice(pricingMatrix, season, hours, people);
   }
   return getDayPrice(pricingMatrix as DayPricingMatrix, season, days);
+}
+
+/** Extract component slugs from a bundle product's pricingMatrix */
+export function getBundleComponents(pricingMatrix: unknown): string[] {
+  if (!isBundleMatrix(pricingMatrix)) return [];
+  return ((pricingMatrix as Record<string, unknown>).components as string[]) || [];
 }
 
 export const EUR = new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR" });

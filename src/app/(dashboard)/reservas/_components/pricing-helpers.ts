@@ -58,7 +58,7 @@ export function findEquipmentProduct(
   const withHelmet = stationMatch.filter(
     (p) =>
       p.includesHelmet &&
-      p.tier === "media_quality" &&
+      (p.tier === "media_quality" || p.tier === "media") &&
       (p.personType === personType || (!p.personType && personType === "adulto"))
   );
   if (withHelmet.length > 0) return withHelmet[0];

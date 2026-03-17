@@ -12,7 +12,11 @@ const CATEGORY_LABELS: Record<string, string> = {
   clase_particular: "Clases Particulares",
   forfait: "Forfaits",
   locker: "Lockers / Guardaropa",
-  apreski: "Après-ski",
+  apreski: "Après-ski / Actividades",
+  menu: "Menú / Restauración",
+  snowcamp: "SnowCamp / Guardería",
+  taxi: "Transfers / Taxi",
+  pack: "Packs All-in-One",
 };
 
 const PRICE_TYPE_LABELS: Record<string, string> = {
@@ -20,6 +24,7 @@ const PRICE_TYPE_LABELS: Record<string, string> = {
   per_person_per_hour: "/hora/pers.",
   per_session: "/sesión",
   fixed: "fijo",
+  bundle: "pack",
 };
 
 const STATION_LABELS: Record<string, string> = {
@@ -45,6 +50,9 @@ interface ProductTableProps {
 function getPriceDisplay(product: Product, season: Season): string {
   if (!product.pricingMatrix) return EUR.format(product.price);
   const matrix = product.pricingMatrix as unknown;
+
+  // Bundle products show "Ver componentes" instead of a price
+  if (product.priceType === "bundle") return "Ver componentes";
 
   if (product.category === "clase_particular") {
     const m = matrix as PrivateLessonMatrix;
@@ -218,7 +226,7 @@ export function ProductTable({ products, onEdit, onDelete, onAdd }: ProductTable
                         )}
                         {product.tier && (
                           <span className="rounded-full bg-purple-50 px-2 py-0.5 text-[10px] font-medium text-purple-600">
-                            {product.tier === "alta_quality" ? "Alta calidad" : "Media calidad"}
+                            {product.tier === "alta_quality" || product.tier === "alta" ? "Alta calidad" : "Media calidad"}
                           </span>
                         )}
                         {product.includesHelmet && (

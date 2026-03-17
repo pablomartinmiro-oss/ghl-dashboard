@@ -146,8 +146,8 @@ export function ProductModal({ product, isOpen, onClose, onSave }: ProductModalP
                 className="w-full rounded-lg border border-border px-3 py-2 text-sm focus:border-coral focus:outline-none focus:ring-1 focus:ring-coral"
               >
                 <option value="">Sin especificar</option>
-                <option value="media_quality">Media calidad</option>
-                <option value="alta_quality">Alta calidad</option>
+                <option value="media">Media calidad</option>
+                <option value="alta">Alta calidad</option>
               </select>
             </div>
             <div className="flex items-end pb-1">
