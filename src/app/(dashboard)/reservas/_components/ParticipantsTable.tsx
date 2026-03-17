@@ -50,6 +50,7 @@ export function ParticipantsTable({ participants, onChange }: ParticipantsTableP
                   >
                     <option value="adulto">Adulto</option>
                     <option value="infantil">Infantil</option>
+                    <option value="baby">Baby (≤5)</option>
                   </select>
                 </td>
                 <td className="px-2 py-1.5">
@@ -58,11 +59,21 @@ export function ParticipantsTable({ participants, onChange }: ParticipantsTableP
                     onChange={(e) => updateParticipant(i, { service: e.target.value })}
                     className="rounded border border-border bg-white px-2 py-1 text-sm"
                   >
-                    <option>Cursillo 3d</option>
-                    <option>Cursillo 5d</option>
-                    <option>Clase particular</option>
-                    <option>Escuelita</option>
-                    <option>Forfait</option>
+                    <optgroup label="Cursos">
+                      <option>Cursillo 3d</option>
+                      <option>Cursillo 5d</option>
+                      <option>Clase particular</option>
+                      <option>Escuelita</option>
+                    </optgroup>
+                    <optgroup label="Forfait / Menú">
+                      <option>Forfait</option>
+                      <option>Menú bocadillo</option>
+                    </optgroup>
+                    <optgroup label="SnowCamp">
+                      <option>SnowCamp día completo</option>
+                      <option>SnowCamp mañana</option>
+                      <option>SnowCamp tarde</option>
+                    </optgroup>
                   </select>
                 </td>
                 <td className="px-2 py-1.5">

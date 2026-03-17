@@ -35,9 +35,6 @@ function getDays(checkIn: string, checkOut: string): number {
   return Math.max(1, Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)));
 }
 
-/**
- * Get price from pricingMatrix for given days and season, falls back to base price.
- */
 function getMatrixPrice(product: Product, season: Season, days: number): number {
   if (product.pricingMatrix) {
     const matrix = product.pricingMatrix as unknown as DayPricingMatrix;
@@ -45,7 +42,6 @@ function getMatrixPrice(product: Product, season: Season, days: number): number 
     if (seasonPrices) {
       const dayStr = String(days);
       if (seasonPrices[dayStr] !== undefined) return seasonPrices[dayStr];
-      // Fallback: highest available or per-day rate
       const keys = Object.keys(seasonPrices).map(Number).sort((a, b) => a - b);
       if (days > keys[keys.length - 1]) return seasonPrices[String(keys[keys.length - 1])];
       return (seasonPrices["1"] || product.price) * days;
@@ -60,7 +56,30 @@ function findByStation(products: Product[], station: string, category: string): 
   );
 }
 
+/** Find equipment product — supports both old "media_quality" and new "media" tier */
+function findEquipPack(
+  alquiler: Product[], personType: string, withHelmet: boolean
+): Product | undefined {
+  if (withHelmet) {
+    return alquiler.find((p) => p.personType === personType && (p.tier === "media_quality" || p.tier === "media") && p.includesHelmet)
+      || alquiler.find((p) => p.personType === personType && (p.tier === "media_quality" || p.tier === "media"));
+  }
+  return alquiler.find((p) => p.personType === personType && p.includesHelmet)
+    || alquiler.find((p) => p.personType === personType && !p.tier);
+}
+
 const EUR = new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR" });
+
+function addItem(
+  items: PackageItem[], product: Product, season: Season, days: number, qty: number, label: string
+) {
+  const price = getMatrixPrice(product, season, days);
+  items.push({
+    productId: product.id, name: product.name, description: product.description,
+    quantity: qty, unitPrice: price, discount: 0, totalPrice: price * qty,
+    breakdown: `${days} días × ${label} = ${EUR.format(price * qty)}`,
+  });
+}
 
 export function autoGeneratePackage(
   formData: QuoteFormData,
@@ -75,77 +94,50 @@ export function autoGeneratePackage(
   // 1. Forfaits
   if (formData.wantsForfait) {
     const forfaits = findByStation(products, station, "forfait");
-    const adultForfait = forfaits.find((p) => p.personType === "adulto");
-    if (adultForfait && formData.adults > 0) {
-      const priceForDays = getMatrixPrice(adultForfait, season, days);
-      items.push({
-        productId: adultForfait.id, name: adultForfait.name, description: adultForfait.description,
-        quantity: formData.adults, unitPrice: priceForDays, discount: 0, totalPrice: priceForDays * formData.adults,
-        breakdown: `${days} días × ${formData.adults} adultos = ${EUR.format(priceForDays * formData.adults)}`,
-      });
-    }
+    const adultF = forfaits.find((p) => p.personType === "adulto");
+    if (adultF && formData.adults > 0) addItem(items, adultF, season, days, formData.adults, `${formData.adults} adultos`);
     if (formData.children > 0) {
-      const childForfait = forfaits.find((p) => p.personType === "infantil");
-      if (childForfait) {
-        const priceForDays = getMatrixPrice(childForfait, season, days);
-        items.push({
-          productId: childForfait.id, name: childForfait.name, description: childForfait.description,
-          quantity: formData.children, unitPrice: priceForDays, discount: 0, totalPrice: priceForDays * formData.children,
-          breakdown: `${days} días × ${formData.children} niños = ${EUR.format(priceForDays * formData.children)}`,
-        });
-      }
+      const childF = forfaits.find((p) => p.personType === "infantil");
+      if (childF) addItem(items, childF, season, days, formData.children, `${formData.children} niños`);
     }
   }
 
   // 2. Classes (group courses)
   if (formData.wantsClases) {
     const escuelas = findByStation(products, station, "escuela");
-    const curso = escuelas.find((p) => p.name.includes("Curso colectivo"));
+    const curso = escuelas.find((p) => p.name.includes("Curso colectivo") || p.name.includes("colectivo"));
     if (curso) {
       const totalPax = formData.adults + formData.children;
-      const priceForDays = getMatrixPrice(curso, season, days);
-      items.push({
-        productId: curso.id, name: curso.name, description: curso.description,
-        quantity: totalPax, unitPrice: priceForDays, discount: 0, totalPrice: priceForDays * totalPax,
-        breakdown: `${days} días × ${totalPax} pers. = ${EUR.format(priceForDays * totalPax)}`,
-      });
+      addItem(items, curso, season, days, totalPax, `${totalPax} pers.`);
     }
   }
 
   // 3. Equipment Rental
   if (formData.wantsEquipment) {
     const alquiler = findByStation(products, station, "alquiler");
-
     if (formData.adults > 0) {
-      const pack = alquiler.find((p) => p.personType === "adulto" && p.tier === "media_quality" && p.includesHelmet)
-        || alquiler.find((p) => p.personType === "adulto" && p.tier === "media_quality");
-      if (pack) {
-        const priceForDays = getMatrixPrice(pack, season, days);
-        items.push({
-          productId: pack.id, name: pack.name, description: pack.description,
-          quantity: formData.adults, unitPrice: priceForDays, discount: 0, totalPrice: priceForDays * formData.adults,
-          breakdown: `${days} días × ${formData.adults} adultos = ${EUR.format(priceForDays * formData.adults)}`,
-        });
-      }
+      const pack = findEquipPack(alquiler, "adulto", true);
+      if (pack) addItem(items, pack, season, days, formData.adults, `${formData.adults} adultos`);
     }
     if (formData.children > 0) {
-      const pack = alquiler.find((p) => p.personType === "infantil" && p.includesHelmet)
-        || alquiler.find((p) => p.personType === "infantil" && !p.tier);
-      if (pack) {
-        const priceForDays = getMatrixPrice(pack, season, days);
-        items.push({
-          productId: pack.id, name: pack.name, description: pack.description,
-          quantity: formData.children, unitPrice: priceForDays, discount: 0, totalPrice: priceForDays * formData.children,
-          breakdown: `${days} días × ${formData.children} niños = ${EUR.format(priceForDays * formData.children)}`,
-        });
-      }
+      const pack = findEquipPack(alquiler, "infantil", true);
+      if (pack) addItem(items, pack, season, days, formData.children, `${formData.children} niños`);
     }
   }
 
-  // 4. Upsells (après-ski)
-  const apresSkiProducts = products.filter((p) => p.category === "apreski" && p.isActive);
-  for (const product of apresSkiProducts) {
-    upsells.push({ product, reason: "Actividad complementaria popular" });
+  // 4. Upsells — après-ski, menu, locker, snowcamp, taxi
+  const upsellCategories = ["apreski", "menu", "locker", "snowcamp", "taxi"];
+  const upsellReasons: Record<string, string> = {
+    apreski: "Actividad complementaria", menu: "Menú en pistas",
+    locker: "Guardaropa", snowcamp: "Guardería infantil", taxi: "Transfer",
+  };
+  for (const cat of upsellCategories) {
+    const catProducts = findByStation(products, station, cat);
+    for (const product of catProducts) {
+      if (product.priceType !== "bundle") {
+        upsells.push({ product, reason: upsellReasons[cat] || cat });
+      }
+    }
   }
 
   return { items, upsells };

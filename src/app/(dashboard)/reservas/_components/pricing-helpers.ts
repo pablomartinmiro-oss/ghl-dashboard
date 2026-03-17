@@ -7,6 +7,10 @@ export const SERVICE_CATEGORY_MAP: Record<string, string> = {
   "Clase particular": "clase_particular",
   "Escuelita": "escuela",
   "Forfait": "forfait",
+  "Menú bocadillo": "menu",
+  "SnowCamp día completo": "snowcamp",
+  "SnowCamp mañana": "snowcamp",
+  "SnowCamp tarde": "snowcamp",
 };
 
 export interface PriceLineItem {
@@ -21,8 +25,20 @@ export interface PriceLineItem {
 export function getServiceDays(service: string): number {
   if (service === "Cursillo 3d") return 3;
   if (service === "Cursillo 5d") return 5;
+  // SnowCamp, Menú, Forfait etc. are per-day
   return 1;
 }
+
+/** Map service name to product name search hint for better matching */
+const SERVICE_NAME_HINTS: Record<string, string> = {
+  "Cursillo 3d": "Curso colectivo",
+  "Cursillo 5d": "Curso colectivo",
+  "Escuelita": "Escuelita",
+  "Menú bocadillo": "Menú bocadillo",
+  "SnowCamp día completo": "Día completo",
+  "SnowCamp mañana": "Mañana",
+  "SnowCamp tarde": "Tarde",
+};
 
 /** Find best matching product for a participant's service */
 export function findProductForService(
@@ -37,6 +53,20 @@ export function findProductForService(
   const stationMatch = products.filter(
     (p) => p.category === category && (p.station === station || p.station === "all") && p.isActive
   );
+
+  // Use name hint for categories with multiple products (e.g. SnowCamp)
+  const hint = SERVICE_NAME_HINTS[service];
+  if (hint) {
+    const nameMatch = stationMatch.filter((p) => p.name.includes(hint));
+    const typedName = nameMatch.filter((p) =>
+      p.personType === personType || (!p.personType && personType === "adulto")
+    );
+    if (typedName.length > 0) {
+      const preferred = typedName.filter((p) => p.station === station);
+      return preferred[0] || typedName[0];
+    }
+    if (nameMatch.length > 0) return nameMatch[0];
+  }
 
   const typed = stationMatch.filter((p) =>
     p.personType === personType || (!p.personType && personType === "adulto")
