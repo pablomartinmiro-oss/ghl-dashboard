@@ -52,6 +52,7 @@ Browser → Middleware (JWT check via getToken()) → Next.js Route
       │   ├── oauth/               — authorize + callback (public)
       │   └── webhooks/            — POST (HMAC verified, updates cache)
       ├── /api/admin/ghl/*         — Admin sync tools (full-sync, sync-status, test, create-fields)
+      ├── /api/admin/seed-products — POST seed full 93-product catalog + season calendar
       ├── /api/cron/sync           — Background sync (public, for external cron)
       ├── /api/dashboard/stats     — Cached stats for dashboard
       ├── /api/pricing             — POST price calculation (season-aware matrix lookup)
@@ -235,8 +236,8 @@ All in `src/hooks/` — use `fetchJSON<T>()` helper that throws on non-ok:
 | Pipeline | `/pipeline` | Kanban DnD, opportunity modal, pipeline selector |
 | Reservas | `/reservas` | Form + list, Groupon voucher, auto-pricing, CSV export, date range filter |
 | Presupuestos | `/presupuestos` | Quote CRUD, auto-package, print/PDF, expiry badges, convert to reservation |
-| Catálogo | `/catalogo` | Product table, season toggle, station filter, CSV import |
-| Settings | `/settings` | Data mode, GHL OAuth, team, season calendar, price import, Groupon mappings |
+| Catálogo | `/catalogo` | Product table, season toggle, station filter, expandable pricing matrix, CSV import |
+| Settings | `/settings` | Data mode, GHL OAuth, team, season calendar, price import, Groupon mappings, catalog seed |
 
 ## Railway Deployment
 - **Build:** `npm install` → postinstall (`prisma generate`) → `npm run build`

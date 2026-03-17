@@ -13,6 +13,7 @@ import { TeamInviteCard } from "./_components/TeamInviteCard";
 import { GrouponMappingCard } from "./_components/GrouponMappingCard";
 import { SeasonCalendarCard } from "./_components/SeasonCalendarCard";
 import { PriceImportCard } from "./_components/PriceImportCard";
+import { SeedCatalogCard } from "./_components/SeedCatalogCard";
 import { toast } from "sonner";
 
 function SettingsToast() {
@@ -116,6 +117,10 @@ export default function SettingsPage() {
 
       <RoleGate permission="settings:tenant">
         <PriceImportCard />
+      </RoleGate>
+
+      <RoleGate permission="settings:tenant">
+        <SeedCatalogCard />
       </RoleGate>
 
       <RoleGate permission="settings:tenant">

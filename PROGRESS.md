@@ -1,12 +1,12 @@
 # GHL Dashboard — Build Progress
 
 ## Current Status
-- **Phase:** PHASE R — Complete Product Catalog Seeded
-- **Step:** All phases A-Q complete + full 2025/2026 Skicenter catalog (93 products, 7 season periods)
+- **Phase:** PHASE S — Settings Seed Button + Catálogo Matrix View
+- **Step:** All phases A-R complete + seed button in Settings + expandable pricing matrix in Catálogo
 - **Live URL:** https://crm-dash-prod.up.railway.app
 - **Last deployed commit:** fc2e8d0 (2026-03-16)
-- **Next:** Connect real GHL sub-account, set up Railway cron, test webhooks
-- **Date:** 2026-03-16
+- **Next:** Deploy to Railway, connect real GHL sub-account, set up Railway cron, test webhooks
+- **Date:** 2026-03-17
 
 ## What the App Does Today
 
@@ -140,6 +140,12 @@ A fully functional multi-tenant CRM dashboard for Skicenter ski travel agencies,
 - Seed endpoint: POST `/api/admin/seed-products`
 - La Pinilla products capped at 5 days, Baqueira has separate Sector Baqueira/Beret
 - Bundle packs store component references for dynamic price calculation
+
+### Phase S: Seed Button + Catálogo Matrix View (2026-03-17) ✅
+- "Sembrar Catálogo" button in Settings page (SeedCatalogCard) — triggers POST `/api/admin/seed-products`
+- Expandable pricing matrix rows in Catálogo — click chevron to see full day-by-day prices for both seasons
+- PricingMatrixRow component: day-based matrix (1-7 days × media/alta), private lesson matrix (hours × people), bundle component list
+- Seed endpoint already existed from Phase R — now accessible via UI button
 
 ## DB Migrations
 1. `init` — Core models (Tenant, User, Role, Reservation, etc.)

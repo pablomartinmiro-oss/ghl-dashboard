@@ -1,10 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { Pencil, Trash2, Plus, Sun, Snowflake, Search } from "lucide-react";
+import { Pencil, Trash2, Plus, Sun, Snowflake, Search, ChevronDown, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Product } from "@/hooks/useProducts";
 import type { Season, DayPricingMatrix, PrivateLessonMatrix } from "@/lib/pricing/types";
+import { PricingMatrixRow } from "./PricingMatrixRow";
 
 const CATEGORY_LABELS: Record<string, string> = {
   alquiler: "Alquiler Material",
@@ -51,7 +52,6 @@ function getPriceDisplay(product: Product, season: Season): string {
   if (!product.pricingMatrix) return EUR.format(product.price);
   const matrix = product.pricingMatrix as unknown;
 
-  // Bundle products show "Ver componentes" instead of a price
   if (product.priceType === "bundle") return "Ver componentes";
 
   if (product.category === "clase_particular") {
@@ -72,7 +72,17 @@ export function ProductTable({ products, onEdit, onDelete, onAdd }: ProductTable
   const [filterStation, setFilterStation] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState("");
   const [season, setSeason] = useState<Season>("media");
+  const [expandedProducts, setExpandedProducts] = useState<Set<string>>(new Set());
   const categories = Object.keys(CATEGORY_LABELS);
+
+  const toggleExpanded = (productId: string) => {
+    setExpandedProducts((prev) => {
+      const next = new Set(prev);
+      if (next.has(productId)) next.delete(productId);
+      else next.add(productId);
+      return next;
+    });
+  };
 
   let filtered = filterCategory
     ? products.filter((p) => p.category === filterCategory)
@@ -105,7 +115,6 @@ export function ProductTable({ products, onEdit, onDelete, onAdd }: ProductTable
           </p>
         </div>
         <div className="flex items-center gap-3">
-          {/* Season toggle */}
           <div className="flex rounded-lg border border-border overflow-hidden">
             <button
               onClick={() => setSeason("media")}
@@ -204,6 +213,7 @@ export function ProductTable({ products, onEdit, onDelete, onAdd }: ProductTable
             <table className="w-full">
               <thead>
                 <tr className="border-b border-border bg-surface/50">
+                  <th className="pl-6 py-3 w-8"></th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">Producto</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">Estación</th>
                   <th className="px-6 py-3 text-right text-xs font-medium text-text-secondary uppercase tracking-wider">
@@ -215,51 +225,16 @@ export function ProductTable({ products, onEdit, onDelete, onAdd }: ProductTable
               </thead>
               <tbody className="divide-y divide-border">
                 {categoryProducts.map((product) => (
-                  <tr key={product.id} className="hover:bg-surface/30 transition-colors">
-                    <td className="px-6 py-4">
-                      <div className="font-medium text-sm text-text-primary">{product.name}</div>
-                      <div className="flex gap-1.5 mt-1">
-                        {product.personType && (
-                          <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-medium text-blue-600">
-                            {product.personType}
-                          </span>
-                        )}
-                        {product.tier && (
-                          <span className="rounded-full bg-purple-50 px-2 py-0.5 text-[10px] font-medium text-purple-600">
-                            {product.tier === "alta_quality" || product.tier === "alta" ? "Alta calidad" : "Media calidad"}
-                          </span>
-                        )}
-                        {product.includesHelmet && (
-                          <span className="rounded-full bg-green-50 px-2 py-0.5 text-[10px] font-medium text-green-600">+ casco</span>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-text-secondary">
-                      {STATION_LABELS[product.station] || product.station}
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <span className="font-semibold text-sm text-text-primary">{getPriceDisplay(product, season)}</span>
-                      <span className="text-xs text-text-secondary ml-1">{PRICE_TYPE_LABELS[product.priceType] || product.priceType}</span>
-                    </td>
-                    <td className="px-6 py-4 text-center">
-                      <span className={cn(
-                        "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium",
-                        product.isActive ? "bg-sage-light text-sage" : "bg-muted-red-light text-muted-red"
-                      )}>
-                        {product.isActive ? "Activo" : "Inactivo"}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <button onClick={() => onEdit(product)} className="rounded-lg p-1.5 text-text-secondary hover:bg-warm-muted hover:text-coral transition-colors" title="Editar">
-                          <Pencil className="h-4 w-4" />
-                        </button>
-                        <button onClick={() => onDelete(product)} className="rounded-lg p-1.5 text-text-secondary hover:bg-red-50 hover:text-danger transition-colors" title="Eliminar">
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
+                  <ProductRow
+                    key={product.id}
+                    product={product}
+                    season={season}
+                    isExpanded={expandedProducts.has(product.id)}
+                    hasMatrix={!!product.pricingMatrix}
+                    onToggle={() => toggleExpanded(product.id)}
+                    onEdit={() => onEdit(product)}
+                    onDelete={() => onDelete(product)}
+                  />
                 ))}
               </tbody>
             </table>
@@ -267,6 +242,82 @@ export function ProductTable({ products, onEdit, onDelete, onAdd }: ProductTable
         </div>
       ))}
     </div>
+  );
+}
+
+interface ProductRowProps {
+  product: Product;
+  season: Season;
+  isExpanded: boolean;
+  hasMatrix: boolean;
+  onToggle: () => void;
+  onEdit: () => void;
+  onDelete: () => void;
+}
+
+function ProductRow({ product, season, isExpanded, hasMatrix, onToggle, onEdit, onDelete }: ProductRowProps) {
+  return (
+    <>
+      <tr className="hover:bg-surface/30 transition-colors">
+        <td className="pl-6 py-4">
+          {hasMatrix && (
+            <button onClick={onToggle} className="rounded p-0.5 text-text-secondary hover:text-text-primary transition-colors">
+              {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+            </button>
+          )}
+        </td>
+        <td className="px-6 py-4">
+          <div className="font-medium text-sm text-text-primary">{product.name}</div>
+          <div className="flex gap-1.5 mt-1">
+            {product.personType && (
+              <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-medium text-blue-600">
+                {product.personType}
+              </span>
+            )}
+            {product.tier && (
+              <span className="rounded-full bg-purple-50 px-2 py-0.5 text-[10px] font-medium text-purple-600">
+                {product.tier === "alta_quality" || product.tier === "alta" ? "Alta calidad" : "Media calidad"}
+              </span>
+            )}
+            {product.includesHelmet && (
+              <span className="rounded-full bg-green-50 px-2 py-0.5 text-[10px] font-medium text-green-600">+ casco</span>
+            )}
+          </div>
+        </td>
+        <td className="px-6 py-4 text-sm text-text-secondary">
+          {STATION_LABELS[product.station] || product.station}
+        </td>
+        <td className="px-6 py-4 text-right">
+          <span className="font-semibold text-sm text-text-primary">{getPriceDisplay(product, season)}</span>
+          <span className="text-xs text-text-secondary ml-1">{PRICE_TYPE_LABELS[product.priceType] || product.priceType}</span>
+        </td>
+        <td className="px-6 py-4 text-center">
+          <span className={cn(
+            "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium",
+            product.isActive ? "bg-sage-light text-sage" : "bg-muted-red-light text-muted-red"
+          )}>
+            {product.isActive ? "Activo" : "Inactivo"}
+          </span>
+        </td>
+        <td className="px-6 py-4 text-right">
+          <div className="flex items-center justify-end gap-2">
+            <button onClick={onEdit} className="rounded-lg p-1.5 text-text-secondary hover:bg-warm-muted hover:text-coral transition-colors" title="Editar">
+              <Pencil className="h-4 w-4" />
+            </button>
+            <button onClick={onDelete} className="rounded-lg p-1.5 text-text-secondary hover:bg-red-50 hover:text-danger transition-colors" title="Eliminar">
+              <Trash2 className="h-4 w-4" />
+            </button>
+          </div>
+        </td>
+      </tr>
+      {isExpanded && hasMatrix && (
+        <tr>
+          <td colSpan={6} className="bg-surface/30 px-10 py-3 border-b border-border">
+            <PricingMatrixRow product={product} />
+          </td>
+        </tr>
+      )}
+    </>
   );
 }
 
