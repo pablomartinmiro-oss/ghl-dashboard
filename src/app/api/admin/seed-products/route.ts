@@ -10,13 +10,13 @@ export async function POST() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const tenantId = session.user.tenantId;
-  const log = logger.child({ route: "seed-products", tenantId });
+  const { tenantId } = session.user;
+  const log = logger.child({ route: "seed-products" });
 
   try {
-    // 1. Delete existing products and season calendar for this tenant
+    // 1. Delete all global products (tenantId = null) and this tenant's season calendar
     const [deletedProducts, deletedSeasons] = await Promise.all([
-      prisma.product.deleteMany({ where: { tenantId } }),
+      prisma.product.deleteMany({ where: { tenantId: null } }),
       prisma.seasonCalendar.deleteMany({ where: { tenantId } }),
     ]);
     log.info({ deletedProducts: deletedProducts.count, deletedSeasons: deletedSeasons.count }, "Cleared old data");
@@ -28,7 +28,6 @@ export async function POST() {
     for (const p of catalog) {
       await prisma.product.create({
         data: {
-          tenantId,
           category: p.category,
           name: p.name,
           station: p.station,

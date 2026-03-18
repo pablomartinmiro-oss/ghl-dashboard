@@ -49,13 +49,13 @@ const DEFAULT_ROLES: Record<string, string[]> = {
   ],
 };
 
-async function seedProducts(tenantId: string) {
+async function seedProducts() {
   const PRODUCTS = buildFullCatalog();
-  await prisma.product.deleteMany({ where: { tenantId } });
+  // Global catalog — delete products with no tenant (shared across all tenants)
+  await prisma.product.deleteMany({ where: { tenantId: null } });
   for (const product of PRODUCTS) {
     await prisma.product.create({
       data: {
-        tenantId,
         category: product.category,
         name: product.name,
         station: product.station,
@@ -386,8 +386,8 @@ async function main() {
   }
 
   // Seed products + season calendar + curated demo data
-  const productCount = await seedProducts(demoTenant.id);
-  console.log(`Seeded ${productCount} products for demo tenant`);
+  const productCount = await seedProducts();
+  console.log(`Seeded ${productCount} global products`);
 
   const calendarCount = await seedSeasonCalendar(demoTenant.id);
   console.log(`Seeded ${calendarCount} season calendar entries for demo tenant`);

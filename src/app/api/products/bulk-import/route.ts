@@ -17,8 +17,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { tenantId } = session.user;
-  const log = logger.child({ tenantId, path: "/api/products/bulk-import" });
+  const log = logger.child({ path: "/api/products/bulk-import" });
 
   try {
     const body = await req.json();
@@ -39,7 +38,7 @@ export async function POST(req: NextRequest) {
       if (!p.name || typeof p.price !== "number") continue;
 
       const existing = await prisma.product.findFirst({
-        where: { tenantId, name: p.name },
+        where: { name: p.name },
       });
 
       if (existing) {
@@ -56,7 +55,6 @@ export async function POST(req: NextRequest) {
       } else {
         await prisma.product.create({
           data: {
-            tenantId,
             name: p.name,
             category: p.category || "alquiler",
             station: p.station || "all",

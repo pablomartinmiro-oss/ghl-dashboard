@@ -9,14 +9,13 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { tenantId } = session.user;
-  const log = logger.child({ tenantId, path: "/api/products" });
+  const log = logger.child({ path: "/api/products" });
   const { searchParams } = request.nextUrl;
   const category = searchParams.get("category");
   const station = searchParams.get("station");
 
   try {
-    const where: Record<string, unknown> = { tenantId };
+    const where: Record<string, unknown> = {};
     if (category) where.category = category;
     if (station) where.station = station;
 
@@ -42,14 +41,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { tenantId } = session.user;
-  const log = logger.child({ tenantId, path: "/api/products" });
+  const log = logger.child({ path: "/api/products" });
 
   try {
     const body = await request.json();
     const product = await prisma.product.create({
       data: {
-        tenantId,
         category: body.category,
         name: body.name,
         station: body.station || "all",

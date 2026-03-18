@@ -145,7 +145,7 @@ model Notification {
 // ==================== PRODUCT CATALOG ====================
 model Product {
   id             String   @id @default(cuid())
-  tenantId       String
+  tenantId       String?  // null = global catalog (shared across all tenants)
   category       String   // "alquiler", "escuela", "clase_particular", "forfait", "locker", "apreski"
   name           String
   station        String   // "baqueira", "sierra_nevada", "valdesqui", "la_pinilla", "grandvalira", "formigal", "alto_campoo", "all"
@@ -161,11 +161,11 @@ model Product {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
-  tenant         Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenant         Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   quoteItems     QuoteItem[]
 
-  @@index([tenantId, station, category])
-  @@index([tenantId, category])
+  @@index([station, category])
+  @@index([category])
 }
 
 // ==================== SEASON CALENDAR ====================
