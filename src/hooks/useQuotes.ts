@@ -210,4 +210,13 @@ export function useMarkPaid() {
   });
 }
 
+export function useQuoteDraftCount() {
+  return useQuery({
+    queryKey: ["quotes", "count", "borrador"],
+    queryFn: () => fetchJSON<{ borrador: number }>("/api/quotes/count"),
+    select: (data) => data.borrador,
+    refetchInterval: 60_000,
+  });
+}
+
 export type { Quote, QuoteItem };

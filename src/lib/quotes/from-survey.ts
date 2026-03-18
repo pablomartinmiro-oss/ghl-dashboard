@@ -1,13 +1,13 @@
 /**
  * Auto-create a draft Quote from GHL ContactCreate webhook survey data.
- *
- * GHL custom fields arrive as either:
- *   Array: [{ id, key, field_value }]
- *   Object: { destino: "Baqueira Beret", ... }
+ * Handles: season detection, duplicate dedup, season-aware pricing,
+ * GHL opportunity creation, and confirmation email to client.
  */
 
 import { prisma } from "@/lib/db";
 import { logger } from "@/lib/logger";
+import { sendEmail } from "@/lib/email/client";
+import { createSurveyOpportunity } from "./opportunity";
 
 interface QuoteItemInput {
   productId: string | null;
@@ -43,9 +43,15 @@ const DESTINATION_MAP: Record<string, string> = {
   "la pinilla": "la_pinilla",
   la_pinilla: "la_pinilla",
   formigal: "formigal",
+  cerler: "formigal",           // Cerler → Formigal pipeline
   "alto campoo": "alto_campoo",
   alto_campoo: "alto_campoo",
   grandvalira: "grandvalira",
+  "candanchú": "candanchu",
+  candanchu: "candanchu",
+  "sierra de madrid": "sierra_de_madrid",
+  sierra_de_madrid: "sierra_de_madrid",
+  snowzone: "sierra_de_madrid",
 };
 
 function normaliseDestination(raw: string): string {
@@ -60,23 +66,32 @@ type RawCustomFields =
   | null
   | undefined;
 
-function extractFields(customFields: RawCustomFields): Record<string, string> {
-  if (!customFields) return {};
-
-  if (Array.isArray(customFields)) {
+function extractFields(cf: RawCustomFields): Record<string, string> {
+  if (!cf) return {};
+  if (Array.isArray(cf)) {
     const out: Record<string, string> = {};
-    for (const f of customFields) {
-      if (f.key) out[f.key] = String(f.field_value ?? f.value ?? "");
-    }
+    for (const f of cf) if (f.key) out[f.key] = String(f.field_value ?? f.value ?? "");
     return out;
   }
-
-  // Already a flat object
   const out: Record<string, string> = {};
-  for (const [k, v] of Object.entries(customFields)) {
-    out[k] = String(v ?? "");
-  }
+  for (const [k, v] of Object.entries(cf)) out[k] = String(v ?? "");
   return out;
+}
+
+// ==================== SEASON DETECTION ====================
+
+type Season = "alta" | "media" | "baja";
+
+function detectSeason(checkIn: string): Season {
+  const d = new Date(checkIn);
+  const m = d.getMonth() + 1; // 1-12
+  const day = d.getDate();
+
+  // Alta: Dec 20 – Jan 6 | Feb 15 – Feb 28
+  if ((m === 12 && day >= 20) || (m === 1 && day <= 6) || (m === 2 && day >= 15)) return "alta";
+  // Media: Jan 7 – Feb 14 | Mar 1 – Mar 31
+  if ((m === 1 && day >= 7) || (m === 2 && day <= 14) || m === 3) return "media";
+  return "baja";
 }
 
 // ==================== SERVICES PARSING ====================
@@ -114,51 +129,75 @@ interface DbProduct {
   isActive: boolean;
 }
 
-function getDays(checkIn: string, checkOut: string): number {
-  return Math.max(
-    1,
-    Math.ceil(
-      (new Date(checkOut).getTime() - new Date(checkIn).getTime()) / 86400000
-    )
-  );
+function getDays(ci: string, co: string): number {
+  return Math.max(1, Math.ceil((new Date(co).getTime() - new Date(ci).getTime()) / 86400000));
 }
 
-function getMatrixPrice(product: DbProduct, days: number): number {
-  if (product.pricingMatrix) {
-    const m = product.pricingMatrix as Record<string, Record<string, number>>;
-    const seasonPrices = m["media"] ?? m["media_quality"];
-    if (seasonPrices) {
-      const dayStr = String(days);
-      if (seasonPrices[dayStr] !== undefined) return seasonPrices[dayStr];
-      const keys = Object.keys(seasonPrices).map(Number).sort((a, b) => a - b);
-      if (days > keys[keys.length - 1])
-        return seasonPrices[String(keys[keys.length - 1])];
-      return (seasonPrices["1"] ?? product.price) * days;
+function getMatrixPrice(p: DbProduct, days: number, season: Season): number {
+  if (p.pricingMatrix) {
+    const m = p.pricingMatrix as Record<string, Record<string, number>>;
+    const sp = m[season] ?? m["media"] ?? m["media_quality"];
+    if (sp) {
+      const ds = String(days);
+      if (sp[ds] !== undefined) return sp[ds];
+      const keys = Object.keys(sp).map(Number).sort((a, b) => a - b);
+      if (days > keys[keys.length - 1]) return sp[String(keys[keys.length - 1])];
+      return (sp["1"] ?? p.price) * days;
     }
   }
-  return product.price * days;
+  return p.price * days;
 }
 
-function byStation(products: DbProduct[], station: string, category: string): DbProduct[] {
-  return products.filter(
-    (p) =>
-      p.category === category &&
-      p.isActive &&
-      (p.station === station || p.station === "all")
-  );
+function byStation(products: DbProduct[], station: string, cat: string): DbProduct[] {
+  return products.filter((p) => p.category === cat && p.isActive && (p.station === station || p.station === "all"));
+}
+
+// ==================== DUPLICATE DETECTION ====================
+
+async function findDuplicate(
+  tenantId: string,
+  email: string | null,
+  ghlContactId: string | null,
+  destination: string,
+  checkIn: Date,
+  checkOut: Date
+): Promise<string | null> {
+  if (!email && !ghlContactId) return null;
+  const or: Record<string, unknown>[] = [];
+  if (email) or.push({ clientEmail: email });
+  if (ghlContactId) or.push({ ghlContactId });
+  const ex = await prisma.quote.findFirst({
+    where: { tenantId, status: "borrador", destination, checkIn: { lte: checkOut }, checkOut: { gte: checkIn }, OR: or },
+    select: { id: true },
+  });
+  return ex?.id ?? null;
+}
+
+// ==================== CONFIRMATION EMAIL ====================
+
+function confirmationEmailHtml(name: string, destination: string, ci: string, co: string): string {
+  const dest = destination.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+  const fmt = (s: string) =>
+    new Date(s).toLocaleDateString("es-ES", { day: "numeric", month: "long", year: "numeric" });
+  return `<div style="font-family:sans-serif;max-width:600px;margin:auto;padding:32px">
+    <h2 style="color:#E87B5A">Hemos recibido tu solicitud</h2>
+    <p>Hola <strong>${name}</strong>,</p>
+    <p>Hemos recibido tu solicitud de presupuesto para <strong>${dest}</strong>
+       del <strong>${fmt(ci)}</strong> al <strong>${fmt(co)}</strong>.</p>
+    <p>En breve recibirás tu presupuesto personalizado.</p>
+    <p>Un saludo,<br/>El equipo Skicenter</p>
+  </div>`;
 }
 
 // ==================== MAIN EXPORT ====================
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function maybeCreateQuoteFromSurvey(tenantId: string, contactData: Record<string, any>): Promise<void> {
-  const rawCustomFields = contactData.customFields as RawCustomFields;
-  const fields = extractFields(rawCustomFields);
-
+  const fields = extractFields(contactData.customFields as RawCustomFields);
   const rawDestino = fields[SURVEY_KEYS.destino];
   const rawCheckIn = fields[SURVEY_KEYS.checkIn];
 
-  // Only proceed if the core survey fields are present
+  // Only proceed if core survey fields are present
   if (!rawDestino || !rawCheckIn) return;
 
   const rawCheckOut = fields[SURVEY_KEYS.checkOut] || rawCheckIn;
@@ -170,8 +209,8 @@ export async function maybeCreateQuoteFromSurvey(tenantId: string, contactData: 
 
   const destination = normaliseDestination(rawDestino);
   const services = parseServices(rawServices);
+  const season = detectSeason(rawCheckIn);
 
-  // Contact info from webhook payload
   const contactId = (contactData.id ?? contactData.contactId) as string | undefined;
   const contactFullName = `${(contactData.firstName as string) ?? ""} ${(contactData.lastName as string) ?? ""}`.trim();
   const clientName = (contactData.name as string) || contactFullName || "Sin nombre";
@@ -181,22 +220,30 @@ export async function maybeCreateQuoteFromSurvey(tenantId: string, contactData: 
   const accommodationNote = [
     accommodationType ? `Alojamiento: ${accommodationType}` : null,
     accommodationName ? `Nombre: ${accommodationName}` : null,
-  ]
-    .filter(Boolean)
-    .join(" · ");
+  ].filter(Boolean).join(" · ");
 
   log.info(
-    { tenantId, contactId, destination, checkIn: rawCheckIn, adults, children },
-    "Survey data detected — creating draft quote"
+    { tenantId, contactId, destination, checkIn: rawCheckIn, adults, children, season },
+    "Survey data detected — processing"
   );
+
+  const checkInDate = new Date(rawCheckIn);
+  const checkOutDate = new Date(rawCheckOut);
+
+  // Duplicate detection — update existing draft instead of creating new one
+  const duplicateId = await findDuplicate(tenantId, clientEmail, contactId ?? null, destination, checkInDate, checkOutDate);
+  if (duplicateId) {
+    log.info({ tenantId, duplicateId }, "[WEBHOOK] Duplicate detected — updating existing quote");
+    await prisma.quote.update({
+      where: { id: duplicateId },
+      data: { adults, children, wantsAccommodation: services.wantsAccommodation, wantsForfait: services.wantsForfait, wantsClases: services.wantsClases, wantsEquipment: services.wantsEquipment },
+    });
+    return;
+  }
 
   // Fetch global products for this destination
   const products = await prisma.product.findMany({
-    where: {
-      tenantId: null, // global catalog
-      isActive: true,
-      station: { in: [destination, "all"] },
-    },
+    where: { tenantId: null, isActive: true, station: { in: [destination, "all"] } },
   });
 
   const days = getDays(rawCheckIn, rawCheckOut);
@@ -204,104 +251,78 @@ export async function maybeCreateQuoteFromSurvey(tenantId: string, contactData: 
 
   // Forfaits
   if (services.wantsForfait) {
-    const forfaits = byStation(products, destination, "forfait");
-    const adultF = forfaits.find((p) => p.personType === "adulto");
-    if (adultF) {
-      const price = getMatrixPrice(adultF, days);
-      items.push({
-        productId: adultF.id,
-        name: adultF.name,
-        quantity: adults,
-        unitPrice: price,
-        discount: 0,
-        totalPrice: price * adults,
-      });
+    const forf = byStation(products, destination, "forfait");
+    const af = forf.find((p) => p.personType === "adulto");
+    if (af) {
+      const pr = getMatrixPrice(af, days, season);
+      items.push({ productId: af.id, name: af.name, quantity: adults, unitPrice: pr, discount: 0, totalPrice: pr * adults });
     }
     if (children > 0) {
-      const childF = forfaits.find((p) => p.personType === "infantil");
-      if (childF) {
-        const price = getMatrixPrice(childF, days);
-        items.push({
-          productId: childF.id,
-          name: childF.name,
-          quantity: children,
-          unitPrice: price,
-          discount: 0,
-          totalPrice: price * children,
-        });
+      const cf = forf.find((p) => p.personType === "infantil");
+      if (cf) {
+        const pr = getMatrixPrice(cf, days, season);
+        items.push({ productId: cf.id, name: cf.name, quantity: children, unitPrice: pr, discount: 0, totalPrice: pr * children });
       }
     }
   }
 
   // Equipment rental
   if (services.wantsEquipment) {
-    const alquiler = byStation(products, destination, "alquiler");
-    const adultPack =
-      alquiler.find((p) => p.personType === "adulto" && (p.tier === "media" || p.tier === "media_quality") && p.includesHelmet) ??
-      alquiler.find((p) => p.personType === "adulto" && (p.tier === "media" || p.tier === "media_quality")) ??
-      alquiler.find((p) => p.personType === "adulto");
-    if (adultPack) {
-      const price = getMatrixPrice(adultPack, days);
-      items.push({
-        productId: adultPack.id,
-        name: adultPack.name,
-        quantity: adults,
-        unitPrice: price,
-        discount: 0,
-        totalPrice: price * adults,
-      });
+    const alq = byStation(products, destination, "alquiler");
+    const ap =
+      alq.find((p) => p.personType === "adulto" && (p.tier === "media" || p.tier === "media_quality") && p.includesHelmet) ??
+      alq.find((p) => p.personType === "adulto" && (p.tier === "media" || p.tier === "media_quality")) ??
+      alq.find((p) => p.personType === "adulto");
+    if (ap) {
+      const pr = getMatrixPrice(ap, days, season);
+      items.push({ productId: ap.id, name: ap.name, quantity: adults, unitPrice: pr, discount: 0, totalPrice: pr * adults });
     }
     if (children > 0) {
-      const childPack =
-        alquiler.find((p) => p.personType === "infantil" && (p.tier === "media" || p.tier === "media_quality")) ??
-        alquiler.find((p) => p.personType === "infantil");
-      if (childPack) {
-        const price = getMatrixPrice(childPack, days);
-        items.push({
-          productId: childPack.id,
-          name: childPack.name,
-          quantity: children,
-          unitPrice: price,
-          discount: 0,
-          totalPrice: price * children,
-        });
+      const cp =
+        alq.find((p) => p.personType === "infantil" && (p.tier === "media" || p.tier === "media_quality")) ??
+        alq.find((p) => p.personType === "infantil");
+      if (cp) {
+        const pr = getMatrixPrice(cp, days, season);
+        items.push({ productId: cp.id, name: cp.name, quantity: children, unitPrice: pr, discount: 0, totalPrice: pr * children });
       }
     }
   }
 
   // Ski school
   if (services.wantsClases) {
-    const escuelas = byStation(products, destination, "escuela");
-    const curso =
-      escuelas.find((p) => p.name.toLowerCase().includes("colectivo")) ??
-      escuelas[0];
-    if (curso) {
-      const totalPax = adults + children;
-      const price = getMatrixPrice(curso, days);
-      items.push({
-        productId: curso.id,
-        name: curso.name,
-        quantity: totalPax,
-        unitPrice: price,
-        discount: 0,
-        totalPrice: price * totalPax,
-      });
+    const esc = byStation(products, destination, "escuela");
+    const cur = esc.find((p) => p.name.toLowerCase().includes("colectivo")) ?? esc[0];
+    if (cur) {
+      const tp = adults + children;
+      const pr = getMatrixPrice(cur, days, season);
+      items.push({ productId: cur.id, name: cur.name, quantity: tp, unitPrice: pr, discount: 0, totalPrice: pr * tp });
     }
   }
 
   const totalAmount = items.reduce((s, i) => s + i.totalPrice, 0);
 
+  // GHL opportunity (non-blocking, skipped if GHL not connected)
+  const opp = contactId
+    ? await createSurveyOpportunity(tenantId, contactId, destination, clientName, totalAmount).catch(() => null)
+    : null;
+
   const quote = await prisma.quote.create({
     data: {
       tenantId,
       ghlContactId: contactId ?? null,
+      ghlOpportunityId: opp?.opportunityId ?? null,
+      ghlPipelineId: opp?.pipelineId ?? null,
+      ghlStageId: opp?.stageId ?? null,
       clientName: clientName as string,
       clientEmail,
       clientPhone,
-      clientNotes: accommodationNote || null,
+      clientNotes: [
+        accommodationNote || null,
+        services.wantsAccommodation ? "Solicita alojamiento (pendiente de cotizar)" : null,
+      ].filter(Boolean).join(" · ") || null,
       destination,
-      checkIn: new Date(rawCheckIn),
-      checkOut: new Date(rawCheckOut),
+      checkIn: checkInDate,
+      checkOut: checkOutDate,
       adults,
       children,
       wantsAccommodation: services.wantsAccommodation,
@@ -315,13 +336,22 @@ export async function maybeCreateQuoteFromSurvey(tenantId: string, contactData: 
   });
 
   if (items.length > 0) {
-    await prisma.quoteItem.createMany({
-      data: items.map((item) => ({ ...item, quoteId: quote.id })),
-    });
+    await prisma.quoteItem.createMany({ data: items.map((item) => ({ ...item, quoteId: quote.id })) });
   }
 
   log.info(
-    { tenantId, contactId, destination, itemCount: items.length, totalAmount },
+    { tenantId, quoteId: quote.id, destination, itemCount: items.length, totalAmount, season },
     "Draft quote created from survey"
   );
+
+  // Confirmation email to client (non-blocking)
+  if (clientEmail) {
+    sendEmail({
+      tenantId,
+      contactId: contactId ?? null,
+      to: clientEmail,
+      subject: "Hemos recibido tu solicitud de presupuesto",
+      html: confirmationEmailHtml(clientName, destination, rawCheckIn, rawCheckOut),
+    }).catch((err) => log.warn({ error: err }, "Failed to send confirmation email"));
+  }
 }

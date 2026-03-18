@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useQuoteDraftCount } from "@/hooks/useQuotes";
 import { Badge } from "@/components/ui/badge";
 import type { PermissionKey } from "@/types/auth";
 
@@ -98,6 +99,7 @@ export function Sidebar({ unreadCount = 0, todayReservations = 0 }: SidebarProps
   const [collapsed, setCollapsed] = useState(false);
   const pathname = usePathname();
   const { can, roleName } = usePermissions();
+  const { data: draftCount = 0 } = useQuoteDraftCount();
 
   const visibleItems = NAV_ITEMS.filter((item) => {
     // Permission check
@@ -147,7 +149,8 @@ export function Sidebar({ unreadCount = 0, todayReservations = 0 }: SidebarProps
           const Icon = item.icon;
           const badgeCount =
             item.href === "/comms" ? unreadCount :
-            item.href === "/reservas" ? todayReservations : 0;
+            item.href === "/reservas" ? todayReservations :
+            item.href === "/presupuestos" ? draftCount : 0;
           const showBadge = badgeCount > 0;
 
           return (
@@ -169,7 +172,7 @@ export function Sidebar({ unreadCount = 0, todayReservations = 0 }: SidebarProps
                   <span className="flex-1">{item.label}</span>
                   {showBadge && (
                     <Badge
-                      variant={item.href === "/reservas" ? "secondary" : "destructive"}
+                      variant={item.href === "/comms" ? "destructive" : item.href === "/presupuestos" ? "destructive" : "secondary"}
                       className="h-5 min-w-5 justify-center rounded-full px-1 text-xs"
                     >
                       {badgeCount > 99 ? "99+" : badgeCount}
