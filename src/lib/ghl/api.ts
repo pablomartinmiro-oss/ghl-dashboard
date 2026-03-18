@@ -136,6 +136,7 @@ export class GHLClient {
             endpoint: config.url,
             status: error.response?.status,
             message: error.message,
+            responseBody: JSON.stringify(error.response?.data ?? "").substring(0, 500),
           },
           "GHL API error"
         );
@@ -421,17 +422,54 @@ export class GHLClient {
 // ==================== FACTORY ====================
 
 export async function getGHLClient(tenantId: string): Promise<GHLClient> {
+  const log = logger.child({ layer: "ghl-factory", tenantId });
+
   const tenant = await prisma.tenant.findUnique({
     where: { id: tenantId },
   });
 
-  if (!tenant?.ghlAccessToken || !tenant?.ghlLocationId) {
-    throw new Error("GHL not connected for this tenant");
+  if (!tenant) {
+    log.error("Tenant not found in DB");
+    throw new Error("Tenant not found");
+  }
+
+  if (!tenant.ghlAccessToken) {
+    log.error("No ghlAccessToken in DB — tenant not connected");
+    throw new Error("GHL not connected for this tenant — no access token");
+  }
+
+  if (!tenant.ghlLocationId) {
+    log.error("No ghlLocationId in DB");
+    throw new Error("GHL not connected for this tenant — no location ID");
+  }
+
+  let accessToken: string;
+  let refreshToken = "";
+
+  try {
+    accessToken = decrypt(tenant.ghlAccessToken);
+    log.info({ tokenLength: accessToken.length }, "Access token decrypted OK");
+  } catch (decryptError) {
+    const msg = decryptError instanceof Error ? decryptError.message : String(decryptError);
+    log.error({
+      error: msg,
+      encryptedLength: tenant.ghlAccessToken.length,
+      encryptedPrefix: tenant.ghlAccessToken.substring(0, 30),
+    }, "FAILED to decrypt access token");
+    throw new Error(`Decrypt access token failed: ${msg}`);
+  }
+
+  if (tenant.ghlRefreshToken) {
+    try {
+      refreshToken = decrypt(tenant.ghlRefreshToken);
+    } catch (decryptError) {
+      log.warn({ error: (decryptError as Error).message }, "Failed to decrypt refresh token — will not be able to auto-refresh");
+    }
   }
 
   return new GHLClient({
-    accessToken: decrypt(tenant.ghlAccessToken),
-    refreshToken: tenant.ghlRefreshToken ? decrypt(tenant.ghlRefreshToken) : "",
+    accessToken,
+    refreshToken,
     locationId: tenant.ghlLocationId,
     tenantId: tenant.id,
     onTokenRefresh: async (newTokens) => {
@@ -443,6 +481,7 @@ export async function getGHLClient(tenantId: string): Promise<GHLClient> {
           ghlTokenExpiry: new Date(Date.now() + 24 * 60 * 60 * 1000),
         },
       });
+      log.info("Tokens refreshed and saved to DB");
     },
   });
 }

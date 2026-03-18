@@ -118,11 +118,26 @@ export async function fullSync(
   });
 
   try {
+    log.info({ tenantId }, "Creating GHL client...");
     const ghl = await getGHLClient(tenantId);
+    log.info({ tenantId, locationId: ghl.getLocationId() }, "GHL client created OK");
 
     // 1. Sync pipelines and stages
     log.info({ tenantId }, "Syncing pipelines...");
-    const pipelines = await ghl.getPipelines();
+    let pipelines;
+    try {
+      pipelines = await ghl.getPipelines();
+      log.info({ tenantId, count: pipelines.length, names: pipelines.map(p => p.name) }, "Pipelines fetched OK");
+    } catch (pipelineError) {
+      const axErr = pipelineError as { response?: { status?: number; data?: unknown }; message?: string };
+      log.error({
+        tenantId,
+        status: axErr.response?.status,
+        body: JSON.stringify(axErr.response?.data ?? "").substring(0, 500),
+        message: axErr.message,
+      }, "PIPELINE FETCH FAILED");
+      throw pipelineError;
+    }
     for (const pipeline of pipelines) {
       const data = mapPipelineToCache(tenantId, pipeline);
       await prisma.cachedPipeline.upsert({
@@ -176,8 +191,19 @@ export async function fullSync(
     return progress;
   } catch (error) {
     const msg = error instanceof Error ? error.message : "Unknown error";
+    const stack = error instanceof Error ? error.stack : undefined;
+    const axErr = error as { response?: { status?: number; data?: unknown } };
     progress.status = "failed";
     progress.error = msg;
+
+    log.error({
+      tenantId,
+      error: msg,
+      stack,
+      httpStatus: axErr.response?.status,
+      httpBody: JSON.stringify(axErr.response?.data ?? "").substring(0, 500),
+      progress,
+    }, "FULL SYNC FAILED — detailed error");
 
     await prisma.syncStatus.update({
       where: { tenantId },
@@ -187,8 +213,6 @@ export async function fullSync(
       where: { id: tenantId },
       data: { syncState: "error", lastSyncError: msg },
     });
-
-    log.error({ tenantId, error: msg }, "Full sync failed");
     return progress;
   }
 }
@@ -205,18 +229,40 @@ async function syncAllContacts(
   const batchSize = 100;
 
   while (hasMore) {
-    const res = await ghl.getContacts({
-      limit: batchSize,
-      startAfterId,
-      startAfter,
-    });
+    let res;
+    try {
+      res = await ghl.getContacts({
+        limit: batchSize,
+        startAfterId,
+        startAfter,
+      });
+    } catch (contactError) {
+      const axErr = contactError as { response?: { status?: number; data?: unknown }; message?: string };
+      log.error({
+        tenantId,
+        page: progress.contacts,
+        status: axErr.response?.status,
+        body: JSON.stringify(axErr.response?.data ?? "").substring(0, 500),
+        message: axErr.message,
+        startAfterId,
+        startAfter,
+      }, "CONTACTS FETCH FAILED");
+      throw contactError;
+    }
 
     if (!res.contacts || res.contacts.length === 0) {
+      log.info({ tenantId, totalSynced: progress.contacts }, "No more contacts");
       hasMore = false;
       break;
     }
 
     progress.contactsTotal = res.meta?.total;
+    log.info({
+      tenantId,
+      batch: res.contacts.length,
+      total: res.meta?.total,
+      synced: progress.contacts,
+    }, "Contacts batch received");
 
     // Batch upsert contacts
     for (const contact of res.contacts) {
@@ -265,10 +311,23 @@ async function syncOpportunitiesForPipeline(
   let hasMore = true;
 
   while (hasMore) {
-    const res = await ghl.getOpportunities(pipelineId, {
-      limit: 20,
-      startAfterId,
-    });
+    let res;
+    try {
+      res = await ghl.getOpportunities(pipelineId, {
+        limit: 20,
+        startAfterId,
+      });
+    } catch (oppError) {
+      const axErr = oppError as { response?: { status?: number; data?: unknown }; message?: string };
+      log.error({
+        tenantId,
+        pipelineId,
+        status: axErr.response?.status,
+        body: JSON.stringify(axErr.response?.data ?? "").substring(0, 500),
+        message: axErr.message,
+      }, "OPPORTUNITIES FETCH FAILED");
+      throw oppError;
+    }
 
     if (!res.opportunities || res.opportunities.length === 0) {
       hasMore = false;
