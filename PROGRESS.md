@@ -1,10 +1,10 @@
 # GHL Dashboard — Build Progress
 
 ## Current Status
-- **Phase:** PHASE T — Demo/Real Separation (20 phases shipped)
-- **Step:** Clean demo/real separation, onboarding cards, GHL sync progress, role-based sidebar, token refresh fix.
+- **Phase:** PHASE T complete + GHL live connected + Nexor data imported
+- **Step:** Ready for Presupuestos module (Phase U)
 - **Live URL:** https://crm-dash-prod.up.railway.app
-- **Last pushed commit:** (pending push)
+- **Last pushed commit:** 67d1601 (2026-03-17)
 - **Last deployed commit:** fc2e8d0 (2026-03-16) — phases R-T not yet deployed
 - **Date:** 2026-03-17
 
@@ -160,6 +160,22 @@ A fully functional multi-tenant CRM dashboard for Skicenter ski travel agencies,
 - **Clean-tenant endpoint**: POST `/api/admin/clean-tenant` — removes reservations, quotes, capacity from current tenant
 - **Reset-demo endpoint**: POST `/api/admin/reset-demo` — wipes and re-seeds all demo data (demo tenant only)
 - **Schema migration**: `20260317000000_demo_onboarding_sync` — adds isDemo, onboarding steps, sync progress fields to Tenant
+
+### Completed 2026-03-17 (Post-Phase T) ✅
+- **GHL OAuth connected** — Skicenter sub-account `FsOiwAoJJB4C8dAL3gUT` (Velno tenant)
+- **Fixed onboarding loop** — JWT callback now refreshes `onboardingComplete` from DB
+- **Fixed ghlLocationId unique constraint** in OAuth callback
+- **ENABLE_MOCK_GHL=false** — real GHL data active
+- **Imported 4,092 Nexor opportunities via CSV** — 7 pipelines: Sierra Nevada (2,161), Baqueira (1,329), Madrid (248), Formigal (218), Alto Campoo (86), Candanchú (34), Astún (16). 4,056 created, 162 new contacts, 33 failed.
+- **Redsys + SMTP env vars** added to Railway
+- **PRESUPUESTOS-ARCHITECTURE-v2.md** ready
+
+### Next Session: Presupuestos Module (Phase U)
+- Build Presupuestos module (replaces BDR/SkiSolution360)
+- Read `PRESUPUESTOS-ARCHITECTURE-v2.md` for full spec
+- Backend: Redsys integration, email service, quote API routes, PDF generation
+- Frontend: presupuestos list, create, detail pages (all UI in Spanish)
+- Integration: GHL pipeline moves, Redsys webhook, automatic reminders
 
 ## DB Migrations
 1. `init` — Core models (Tenant, User, Role, Reservation, etc.)

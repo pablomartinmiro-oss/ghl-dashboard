@@ -10,9 +10,9 @@ You are an autonomous senior full-stack engineer building a multi-tenant Skicent
 - **Deploy:** Railway (Docker + Postgres + Redis)
 - **Live URL:** https://crm-dash-prod.up.railway.app
 - **UI Language:** All Spanish. Currency in EUR (es-ES format).
-- **Last pushed:** (pending) — phases R+S+T
+- **Last pushed:** commit 67d1601 (2026-03-17) — GHL connected + Nexor import
 - **Last deployed:** commit fc2e8d0 (2026-03-16) — Railway auto-deploys from main
-- **Phases completed:** A through T (20 phases)
+- **Phases completed:** A through T (20 phases) + GHL OAuth + Nexor import (4,092 opportunities)
 
 ## Key Docs
 
