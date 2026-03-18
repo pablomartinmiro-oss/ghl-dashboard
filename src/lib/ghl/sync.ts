@@ -98,6 +98,8 @@ export async function fullSync(
   tenantId: string,
   onProgress?: (progress: SyncProgress) => void
 ): Promise<SyncProgress> {
+  console.log(`[SYNC] ========== FULL SYNC STARTED for tenant ${tenantId} ==========`);
+
   const progress: SyncProgress = {
     contacts: 0,
     conversations: 0,
@@ -116,28 +118,26 @@ export async function fullSync(
     where: { id: tenantId },
     data: { syncState: "syncing", syncProgressMsg: "Iniciando sincronización...", lastSyncError: null },
   });
+  console.log("[SYNC] Marked sync in progress in DB");
 
   try {
-    log.info({ tenantId }, "Creating GHL client...");
+    // Step 1: Create GHL client (decrypts token)
+    console.log("[SYNC] Step 1: Creating GHL client...");
     const ghl = await getGHLClient(tenantId);
-    log.info({ tenantId, locationId: ghl.getLocationId() }, "GHL client created OK");
+    console.log(`[SYNC] GHL client created OK — locationId: ${ghl.getLocationId()}`);
 
-    // 1. Sync pipelines and stages
-    log.info({ tenantId }, "Syncing pipelines...");
-    let pipelines;
+    // Step 2: Sync pipelines
+    console.log("[SYNC] Step 2: Fetching pipelines...");
+    let pipelines: GHLPipeline[];
     try {
       pipelines = await ghl.getPipelines();
-      log.info({ tenantId, count: pipelines.length, names: pipelines.map(p => p.name) }, "Pipelines fetched OK");
-    } catch (pipelineError) {
-      const axErr = pipelineError as { response?: { status?: number; data?: unknown }; message?: string };
-      log.error({
-        tenantId,
-        status: axErr.response?.status,
-        body: JSON.stringify(axErr.response?.data ?? "").substring(0, 500),
-        message: axErr.message,
-      }, "PIPELINE FETCH FAILED");
-      throw pipelineError;
+    } catch (err) {
+      const e = err as { response?: { status?: number; data?: unknown }; message?: string };
+      console.error(`[SYNC] PIPELINE FETCH FAILED — status: ${e.response?.status}, body: ${JSON.stringify(e.response?.data).substring(0, 300)}, msg: ${e.message}`);
+      throw err;
     }
+    console.log(`[SYNC] Got ${pipelines.length} pipelines: ${pipelines.map(p => p.name).join(", ")}`);
+
     for (const pipeline of pipelines) {
       const data = mapPipelineToCache(tenantId, pipeline);
       await prisma.cachedPipeline.upsert({
@@ -146,22 +146,24 @@ export async function fullSync(
         update: { name: data.name, stages: data.stages, raw: data.raw, cachedAt: new Date() },
       });
       progress.pipelines++;
+      console.log(`[SYNC] Cached pipeline: ${pipeline.name} (${pipeline.stages.length} stages)`);
 
-      // 2. Sync opportunities per pipeline (paginated)
-      await syncOpportunitiesForPipeline(ghl, tenantId, pipeline.id, progress);
+      // Step 3: Sync opportunities per pipeline
+      console.log(`[SYNC] Step 3: Fetching opportunities for pipeline "${pipeline.name}"...`);
+      await syncOpportunitiesForPipeline(ghl, tenantId, pipeline.id, pipeline.name, progress);
     }
     onProgress?.(progress);
 
-    // 3. Sync contacts (paginated — GHL max 100 per page)
-    log.info({ tenantId }, "Syncing contacts...");
+    // Step 4: Sync contacts (paginated)
+    console.log("[SYNC] Step 4: Syncing contacts (paginated)...");
     await syncAllContacts(ghl, tenantId, progress, onProgress);
 
-    // 4. Sync recent conversations
-    log.info({ tenantId }, "Syncing conversations...");
+    // Step 5: Sync conversations
+    console.log("[SYNC] Step 5: Syncing conversations...");
     await syncConversations(ghl, tenantId, progress);
     onProgress?.(progress);
 
-    // Update sync status
+    // Step 6: Update sync status
     progress.status = "completed";
     await prisma.syncStatus.update({
       where: { tenantId },
@@ -184,35 +186,33 @@ export async function fullSync(
       },
     });
 
-    log.info(
-      { tenantId, ...progress },
-      "Full sync completed"
-    );
+    console.log(`[SYNC] ========== FULL SYNC COMPLETED ==========`);
+    console.log(`[SYNC] Results: ${progress.pipelines} pipelines, ${progress.opportunities} opportunities, ${progress.contacts} contacts, ${progress.conversations} conversations`);
     return progress;
   } catch (error) {
     const msg = error instanceof Error ? error.message : "Unknown error";
     const stack = error instanceof Error ? error.stack : undefined;
-    const axErr = error as { response?: { status?: number; data?: unknown } };
     progress.status = "failed";
     progress.error = msg;
 
-    log.error({
-      tenantId,
-      error: msg,
-      stack,
-      httpStatus: axErr.response?.status,
-      httpBody: JSON.stringify(axErr.response?.data ?? "").substring(0, 500),
-      progress,
-    }, "FULL SYNC FAILED — detailed error");
+    console.error(`[SYNC] ========== FULL SYNC FAILED ==========`);
+    console.error(`[SYNC] Error: ${msg}`);
+    console.error(`[SYNC] Stack: ${stack}`);
+    console.error(`[SYNC] Progress at failure: pipelines=${progress.pipelines} opps=${progress.opportunities} contacts=${progress.contacts} convs=${progress.conversations}`);
 
-    await prisma.syncStatus.update({
-      where: { tenantId },
-      data: { syncInProgress: false, lastError: msg },
-    });
-    await prisma.tenant.update({
-      where: { id: tenantId },
-      data: { syncState: "error", lastSyncError: msg },
-    });
+    try {
+      await prisma.syncStatus.update({
+        where: { tenantId },
+        data: { syncInProgress: false, lastError: msg },
+      });
+      await prisma.tenant.update({
+        where: { id: tenantId },
+        data: { syncState: "error", lastSyncError: msg },
+      });
+    } catch (dbErr) {
+      console.error("[SYNC] Failed to write error state to DB:", dbErr);
+    }
+
     return progress;
   }
 }
@@ -227,44 +227,33 @@ async function syncAllContacts(
   let startAfter: number | undefined;
   let hasMore = true;
   const batchSize = 100;
+  let pageNum = 0;
 
   while (hasMore) {
+    pageNum++;
     let res;
     try {
+      console.log(`[SYNC] Contacts page ${pageNum}: fetching (startAfterId=${startAfterId ?? "none"}, startAfter=${startAfter ?? "none"})...`);
       res = await ghl.getContacts({
         limit: batchSize,
         startAfterId,
         startAfter,
       });
-    } catch (contactError) {
-      const axErr = contactError as { response?: { status?: number; data?: unknown }; message?: string };
-      log.error({
-        tenantId,
-        page: progress.contacts,
-        status: axErr.response?.status,
-        body: JSON.stringify(axErr.response?.data ?? "").substring(0, 500),
-        message: axErr.message,
-        startAfterId,
-        startAfter,
-      }, "CONTACTS FETCH FAILED");
-      throw contactError;
+    } catch (err) {
+      const e = err as { response?: { status?: number; data?: unknown }; message?: string };
+      console.error(`[SYNC] CONTACTS PAGE ${pageNum} FAILED — status: ${e.response?.status}, body: ${JSON.stringify(e.response?.data).substring(0, 300)}, msg: ${e.message}`);
+      throw err;
     }
 
     if (!res.contacts || res.contacts.length === 0) {
-      log.info({ tenantId, totalSynced: progress.contacts }, "No more contacts");
+      console.log(`[SYNC] Contacts page ${pageNum}: empty response, done`);
       hasMore = false;
       break;
     }
 
     progress.contactsTotal = res.meta?.total;
-    log.info({
-      tenantId,
-      batch: res.contacts.length,
-      total: res.meta?.total,
-      synced: progress.contacts,
-    }, "Contacts batch received");
+    console.log(`[SYNC] Contacts page ${pageNum}: got ${res.contacts.length} records (total: ${res.meta?.total ?? "unknown"}, synced so far: ${progress.contacts})`);
 
-    // Batch upsert contacts
     for (const contact of res.contacts) {
       const data = mapContactToCache(tenantId, contact);
       await prisma.cachedContact.upsert({
@@ -287,11 +276,14 @@ async function syncAllContacts(
     // GHL pagination uses startAfterId or startAfter
     if (res.meta?.startAfterId) {
       startAfterId = res.meta.startAfterId;
+      startAfter = undefined;
     } else if (res.meta?.startAfter !== undefined) {
       startAfter = res.meta.startAfter;
+      startAfterId = undefined;
     } else {
       // Fallback: use last contact ID
       startAfterId = res.contacts[res.contacts.length - 1].id;
+      startAfter = undefined;
     }
 
     hasMore = res.contacts.length === batchSize;
@@ -299,40 +291,42 @@ async function syncAllContacts(
     // Rate limit: wait 150ms between pages
     await new Promise((r) => setTimeout(r, 150));
   }
+
+  console.log(`[SYNC] Contacts sync done: ${progress.contacts} total`);
 }
 
 async function syncOpportunitiesForPipeline(
   ghl: GHLClient,
   tenantId: string,
   pipelineId: string,
+  pipelineName: string,
   progress: SyncProgress
 ) {
   let startAfterId: string | undefined;
   let hasMore = true;
+  let pageNum = 0;
+  const startCount = progress.opportunities;
 
   while (hasMore) {
+    pageNum++;
     let res;
     try {
       res = await ghl.getOpportunities(pipelineId, {
         limit: 20,
         startAfterId,
       });
-    } catch (oppError) {
-      const axErr = oppError as { response?: { status?: number; data?: unknown }; message?: string };
-      log.error({
-        tenantId,
-        pipelineId,
-        status: axErr.response?.status,
-        body: JSON.stringify(axErr.response?.data ?? "").substring(0, 500),
-        message: axErr.message,
-      }, "OPPORTUNITIES FETCH FAILED");
-      throw oppError;
+    } catch (err) {
+      const e = err as { response?: { status?: number; data?: unknown }; message?: string };
+      console.error(`[SYNC] OPPS page ${pageNum} for "${pipelineName}" FAILED — status: ${e.response?.status}, body: ${JSON.stringify(e.response?.data).substring(0, 300)}, msg: ${e.message}`);
+      throw err;
     }
 
     if (!res.opportunities || res.opportunities.length === 0) {
       hasMore = false;
       break;
     }
+
+    console.log(`[SYNC] Opps page ${pageNum} for "${pipelineName}": got ${res.opportunities.length} (total synced: ${progress.opportunities})`);
 
     for (const opp of res.opportunities) {
       const data = mapOpportunityToCache(tenantId, opp);
@@ -352,6 +346,9 @@ async function syncOpportunitiesForPipeline(
 
     await new Promise((r) => setTimeout(r, 150));
   }
+
+  const pipelineCount = progress.opportunities - startCount;
+  console.log(`[SYNC] Pipeline "${pipelineName}": ${pipelineCount} opportunities synced`);
 }
 
 async function syncConversations(
@@ -359,17 +356,16 @@ async function syncConversations(
   tenantId: string,
   progress: SyncProgress
 ) {
-  let hasMore = true;
-  let lastMessageDate: string | undefined;
-  const batchSize = 100;
-
-  while (hasMore) {
-    const res = await ghl.getConversations({ limit: batchSize });
+  console.log("[SYNC] Fetching conversations...");
+  try {
+    const res = await ghl.getConversations({ limit: 100 });
 
     if (!res.conversations || res.conversations.length === 0) {
-      hasMore = false;
-      break;
+      console.log("[SYNC] No conversations found");
+      return;
     }
+
+    console.log(`[SYNC] Got ${res.conversations.length} conversations`);
 
     for (const conv of res.conversations) {
       const data = mapConversationToCache(tenantId, conv);
@@ -379,14 +375,13 @@ async function syncConversations(
         update: stripId(data),
       });
       progress.conversations++;
-      lastMessageDate = conv.lastMessageDate ?? lastMessageDate;
     }
 
-    // GHL conversations search doesn't support cursor pagination well —
-    // stop after first batch to avoid duplicates (webhooks keep it fresh)
-    hasMore = false;
-
-    await new Promise((r) => setTimeout(r, 150));
+    console.log(`[SYNC] Conversations sync done: ${progress.conversations} total`);
+  } catch (err) {
+    const e = err as { response?: { status?: number; data?: unknown }; message?: string };
+    console.error(`[SYNC] CONVERSATIONS FAILED — status: ${e.response?.status}, body: ${JSON.stringify(e.response?.data).substring(0, 300)}, msg: ${e.message}`);
+    throw err;
   }
 }
 
@@ -398,10 +393,7 @@ export async function incrementalSync(tenantId: string): Promise<{
 }> {
   const ghl = await getGHLClient(tenantId);
 
-  // Get current cache count
   const cachedCount = await prisma.cachedContact.count({ where: { tenantId } });
-
-  // Get GHL total count (first page with limit=1 to get meta.total)
   const res = await ghl.getContacts({ limit: 1 });
   const ghlTotal = res.meta?.total ?? 0;
 
@@ -413,13 +405,10 @@ export async function incrementalSync(tenantId: string): Promise<{
     "Incremental sync check"
   );
 
-  // If mismatch > 10%, need full sync
   if (mismatchPercent > 10) {
     return { contactsDelta: delta, needsFullSync: true };
   }
 
-  // Otherwise sync recent contacts (last 10 minutes)
-  // GHL doesn't have a "modified since" filter, so we just re-fetch recent
   const recentContacts = await ghl.getContacts({ limit: 100 });
   for (const contact of recentContacts.contacts) {
     const data = mapContactToCache(tenantId, contact);
@@ -430,7 +419,6 @@ export async function incrementalSync(tenantId: string): Promise<{
     });
   }
 
-  // Update sync status
   await prisma.syncStatus.upsert({
     where: { tenantId },
     create: { tenantId, lastIncrSync: new Date() },
@@ -444,7 +432,6 @@ export async function incrementalSync(tenantId: string): Promise<{
 
 export async function upsertCachedContact(
   tenantId: string,
-  // GHL raw response
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   data: Record<string, any>
 ) {
@@ -482,7 +469,6 @@ export async function deleteCachedContact(tenantId: string, contactId: string) {
 
 export async function updateCachedContactTags(
   tenantId: string,
-  // GHL raw response
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   data: Record<string, any>
 ) {
@@ -497,7 +483,6 @@ export async function updateCachedContactTags(
 
 export async function updateCachedContactDnd(
   tenantId: string,
-  // GHL raw response
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   data: Record<string, any>
 ) {
@@ -512,14 +497,12 @@ export async function updateCachedContactDnd(
 
 export async function cacheMessage(
   tenantId: string,
-  // GHL raw response
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   data: Record<string, any>
 ) {
   const conversationId = data.conversationId as string;
   if (!conversationId) return;
 
-  // Update conversation's last message
   await prisma.cachedConversation.updateMany({
     where: { id: conversationId, tenantId },
     data: {
@@ -533,7 +516,6 @@ export async function cacheMessage(
 
 export async function upsertCachedOpportunity(
   tenantId: string,
-  // GHL raw response
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   data: Record<string, any>
 ) {
@@ -562,15 +544,12 @@ export async function upsertCachedOpportunity(
 
 export async function updateCachedOpportunityField(
   tenantId: string,
-  // GHL raw response
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   data: Record<string, any>
 ) {
   const oppId = data.id as string;
   if (!oppId) return;
 
-  // Build update with only provided fields
-  // GHL raw response
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const update: Record<string, any> = { cachedAt: new Date() };
   if (data.pipelineStageId) update.pipelineStageId = data.pipelineStageId;
