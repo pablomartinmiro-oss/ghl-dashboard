@@ -106,6 +106,10 @@ export async function POST(req: NextRequest) {
       case "ContactUpdate":
         await upsertCachedContact(tenantId, data);
         await invalidateContactCaches(tenantId, (data.contactId as string) ?? (data.id as string));
+        // Also check for survey data on updates (GHL sends ContactUpdate when form is submitted on existing contact)
+        await maybeCreateQuoteFromSurvey(tenantId, data).catch((err) =>
+          log.error({ error: err }, "Failed to create quote from survey (ContactUpdate)")
+        );
         break;
 
       case "ContactDelete":
