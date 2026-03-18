@@ -3,21 +3,26 @@
 import { useState } from "react";
 import { AlertTriangle, X, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useTenantSettings } from "@/hooks/useSettings";
 
 export function GHLStatusBanner() {
   const [dismissed, setDismissed] = useState(false);
-  // In future, this will be driven by a hook that checks GHL connection status.
-  // For now, always hidden unless explicitly shown via props/state.
-  const ghlError: string | null = null;
+  const { data: settings } = useTenantSettings();
 
-  if (!ghlError || dismissed) {
+  const tenant = settings?.tenant;
+  const isError = tenant?.syncState === "error";
+  const errorMessage = tenant?.lastSyncError;
+
+  if (!isError || !errorMessage || dismissed) {
     return null;
   }
 
   return (
     <div className="flex items-center gap-3 border-b border-orange-200 bg-orange-50 px-6 py-2.5">
       <AlertTriangle className="h-4 w-4 shrink-0 text-orange-600" />
-      <p className="flex-1 text-sm text-orange-800">{ghlError}</p>
+      <p className="flex-1 text-sm text-orange-800">
+        GHL desconectado: {errorMessage}
+      </p>
       <Button
         variant="outline"
         size="sm"
@@ -27,12 +32,12 @@ export function GHLStatusBanner() {
         }}
       >
         <RefreshCw className="h-3 w-3" />
-        Reconnect
+        Reconectar
       </Button>
       <button
         onClick={() => setDismissed(true)}
         className="rounded p-0.5 text-orange-400 hover:text-orange-600"
-        aria-label="Dismiss"
+        aria-label="Cerrar"
       >
         <X className="h-4 w-4" />
       </button>

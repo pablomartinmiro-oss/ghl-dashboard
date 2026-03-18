@@ -1,12 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth/config";
-import { createGHLClient } from "@/lib/ghl/client";
-import { getCachedOrFetch } from "@/lib/cache/redis";
-import { CacheKeys, CacheTTL } from "@/lib/cache/keys";
 import { prisma } from "@/lib/db";
-import { getDataMode } from "@/lib/data/getDataMode";
 import { logger } from "@/lib/logger";
-import type { GHLOpportunitiesResponse } from "@/lib/ghl/types";
 
 export async function GET(req: Request) {
   const session = await auth();
@@ -23,53 +18,33 @@ export async function GET(req: Request) {
   const log = logger.child({ tenantId, path: "/api/crm/opportunities" });
 
   try {
-    const mode = await getDataMode(tenantId);
+    const where = { tenantId, ...(pipelineId ? { pipelineId } : {}) };
+    const [opportunities, total] = await Promise.all([
+      prisma.cachedOpportunity.findMany({
+        where,
+        orderBy: { cachedAt: "desc" },
+        skip,
+        take: limit,
+      }),
+      prisma.cachedOpportunity.count({ where }),
+    ]);
 
-    if (mode === "live") {
-      const where = { tenantId, ...(pipelineId ? { pipelineId } : {}) };
-      const [opportunities, total] = await Promise.all([
-        prisma.cachedOpportunity.findMany({
-          where,
-          orderBy: { cachedAt: "desc" },
-          skip,
-          take: limit,
-        }),
-        prisma.cachedOpportunity.count({ where }),
-      ]);
-
-      log.info({ count: opportunities.length, mode, page }, "Opportunities from cache");
-      return NextResponse.json({
-        opportunities: opportunities.map((o) => ({
-          id: o.id,
-          name: o.name ?? "",
-          pipelineId: o.pipelineId,
-          pipelineStageId: o.pipelineStageId,
-          monetaryValue: o.monetaryValue ?? 0,
-          contactId: o.contactId ?? "",
-          contactName: o.contactName,
-          assignedTo: o.assignedTo,
-          createdAt: o.cachedAt.toISOString(),
-          status: o.status ?? "open",
-        })),
-        meta: { total, page, limit, totalPages: Math.ceil(total / limit) },
-      });
-    }
-
-    // Mock mode
-    const data = await getCachedOrFetch<GHLOpportunitiesResponse>(
-      CacheKeys.opportunities(tenantId, pipelineId),
-      CacheTTL.opportunities,
-      async () => {
-        const client = await createGHLClient(tenantId);
-        const res = await client.get("/opportunities/search", {
-          params: { pipeline_id: pipelineId },
-        });
-        return res.data as GHLOpportunitiesResponse;
-      }
-    );
-
-    log.info({ count: data.opportunities.length, mode }, "Opportunities fetched");
-    return NextResponse.json(data);
+    log.info({ count: opportunities.length, page, total }, "Opportunities from cache");
+    return NextResponse.json({
+      opportunities: opportunities.map((o) => ({
+        id: o.id,
+        name: o.name ?? "",
+        pipelineId: o.pipelineId,
+        pipelineStageId: o.pipelineStageId,
+        monetaryValue: o.monetaryValue ?? 0,
+        contactId: o.contactId ?? "",
+        contactName: o.contactName,
+        assignedTo: o.assignedTo,
+        createdAt: o.cachedAt.toISOString(),
+        status: o.status ?? "open",
+      })),
+      meta: { total, page, limit, totalPages: Math.ceil(total / limit) },
+    });
   } catch (error) {
     log.error({ error }, "Failed to fetch opportunities");
     return NextResponse.json(

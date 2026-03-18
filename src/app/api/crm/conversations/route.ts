@@ -1,12 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth/config";
-import { createGHLClient } from "@/lib/ghl/client";
-import { getCachedOrFetch } from "@/lib/cache/redis";
-import { CacheKeys, CacheTTL } from "@/lib/cache/keys";
 import { prisma } from "@/lib/db";
-import { getDataMode } from "@/lib/data/getDataMode";
 import { logger } from "@/lib/logger";
-import type { GHLConversationsResponse } from "@/lib/ghl/types";
 
 export async function GET(req: NextRequest) {
   const session = await auth();
@@ -22,56 +17,38 @@ export async function GET(req: NextRequest) {
   const skip = (page - 1) * limit;
 
   try {
-    const mode = await getDataMode(tenantId);
+    const [conversations, total] = await Promise.all([
+      prisma.cachedConversation.findMany({
+        where: { tenantId },
+        orderBy: { lastMessageDate: "desc" },
+        skip,
+        take: limit,
+      }),
+      prisma.cachedConversation.count({ where: { tenantId } }),
+    ]);
 
-    if (mode === "live") {
-      const [conversations, total] = await Promise.all([
-        prisma.cachedConversation.findMany({
-          where: { tenantId },
-          orderBy: { lastMessageDate: "desc" },
-          skip,
-          take: limit,
-        }),
-        prisma.cachedConversation.count({ where: { tenantId } }),
-      ]);
-
-      log.info({ count: conversations.length, mode, page }, "Conversations from cache");
-      return NextResponse.json({
-        conversations: conversations.map((c) => {
-          const raw = c.raw as Record<string, unknown> | null;
-          const assignedTo = (raw?.assignedTo as string) ?? null;
-          return {
-            id: c.id,
-            contactId: c.contactId,
-            contactName: c.contactName ?? "",
-            contactPhone: c.contactPhone,
-            contactEmail: c.contactEmail,
-            lastMessageBody: c.lastMessageBody ?? "",
-            lastMessageDate: c.lastMessageDate?.toISOString() ?? "",
-            lastMessageType: c.lastMessageType,
-            unreadCount: c.unreadCount,
-            assignedTo,
-            type: c.lastMessageType ?? "SMS",
-          };
-        }),
-        total,
-        meta: { page, limit, totalPages: Math.ceil(total / limit) },
-      });
-    }
-
-    // Mock mode
-    const data = await getCachedOrFetch<GHLConversationsResponse>(
-      CacheKeys.conversations(tenantId),
-      CacheTTL.conversations,
-      async () => {
-        const client = await createGHLClient(tenantId);
-        const res = await client.get("/conversations/search");
-        return res.data as GHLConversationsResponse;
-      }
-    );
-
-    log.info({ count: data.conversations.length, mode }, "Conversations fetched");
-    return NextResponse.json(data);
+    log.info({ count: conversations.length, page, total }, "Conversations from cache");
+    return NextResponse.json({
+      conversations: conversations.map((c) => {
+        const raw = c.raw as Record<string, unknown> | null;
+        const assignedTo = (raw?.assignedTo as string) ?? null;
+        return {
+          id: c.id,
+          contactId: c.contactId,
+          contactName: c.contactName ?? "",
+          contactPhone: c.contactPhone,
+          contactEmail: c.contactEmail,
+          lastMessageBody: c.lastMessageBody ?? "",
+          lastMessageDate: c.lastMessageDate?.toISOString() ?? "",
+          lastMessageType: c.lastMessageType,
+          unreadCount: c.unreadCount,
+          assignedTo,
+          type: c.lastMessageType ?? "SMS",
+        };
+      }),
+      total,
+      meta: { page, limit, totalPages: Math.ceil(total / limit) },
+    });
   } catch (error) {
     log.error({ error }, "Failed to fetch conversations");
     return NextResponse.json(

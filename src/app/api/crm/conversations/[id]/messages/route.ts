@@ -1,12 +1,8 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth/config";
-import { createGHLClient } from "@/lib/ghl/client";
 import { getGHLClient } from "@/lib/ghl/api";
-import { getCachedOrFetch } from "@/lib/cache/redis";
-import { CacheKeys, CacheTTL } from "@/lib/cache/keys";
 import { getDataMode } from "@/lib/data/getDataMode";
 import { logger } from "@/lib/logger";
-import type { GHLMessagesResponse } from "@/lib/ghl/types";
 
 export async function GET(
   _req: Request,
@@ -23,28 +19,15 @@ export async function GET(
 
   try {
     const mode = await getDataMode(tenantId);
-
-    if (mode === "live") {
-      // Messages always fetched fresh from GHL (not cached)
-      const ghl = await getGHLClient(tenantId);
-      const messages = await ghl.getMessages(id);
-      log.info({ count: messages.length, mode }, "Messages fetched live");
-      return NextResponse.json({ messages, nextPage: null });
+    if (mode === "disconnected") {
+      return NextResponse.json({ messages: [], nextPage: null });
     }
 
-    // Mock mode
-    const data = await getCachedOrFetch<GHLMessagesResponse>(
-      CacheKeys.conversation(tenantId, id),
-      CacheTTL.conversation,
-      async () => {
-        const client = await createGHLClient(tenantId);
-        const res = await client.get(`/conversations/${id}/messages`);
-        return res.data as GHLMessagesResponse;
-      }
-    );
-
-    log.info({ count: data.messages.length }, "Messages fetched");
-    return NextResponse.json(data);
+    // Messages always fetched fresh from GHL (not cached)
+    const ghl = await getGHLClient(tenantId);
+    const messages = await ghl.getMessages(id);
+    log.info({ count: messages.length }, "Messages fetched live");
+    return NextResponse.json({ messages, nextPage: null });
   } catch (error) {
     log.error({ error }, "Failed to fetch messages");
     return NextResponse.json(
@@ -70,28 +53,18 @@ export async function POST(
 
   try {
     const mode = await getDataMode(tenantId);
-
-    if (mode === "live") {
-      const ghl = await getGHLClient(tenantId);
-      const result = await ghl.sendMessage({
-        conversationId: id,
-        type: (body.type as "SMS" | "Email" | "WhatsApp") ?? "SMS",
-        body: body.message,
-      });
-      log.info("Message sent via GHL");
-      return NextResponse.json(result);
+    if (mode === "disconnected") {
+      return NextResponse.json({ error: "GHL no conectado" }, { status: 400 });
     }
 
-    // Mock mode
-    const client = await createGHLClient(tenantId);
-    const res = await client.post("/conversations/messages", {
-      type: "SMS",
+    const ghl = await getGHLClient(tenantId);
+    const result = await ghl.sendMessage({
       conversationId: id,
-      message: body.message,
+      type: (body.type as "SMS" | "Email" | "WhatsApp") ?? "SMS",
+      body: body.message,
     });
-
-    log.info("Message sent");
-    return NextResponse.json(res.data);
+    log.info("Message sent via GHL");
+    return NextResponse.json(result);
   } catch (error) {
     log.error({ error }, "Failed to send message");
     return NextResponse.json(

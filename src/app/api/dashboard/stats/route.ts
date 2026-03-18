@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth/config";
 import { prisma } from "@/lib/db";
-import { getDataMode } from "@/lib/data/getDataMode";
 
 export async function GET() {
   const session = await auth();
@@ -10,9 +9,14 @@ export async function GET() {
   }
 
   const tenantId = session.user.tenantId;
-  const mode = await getDataMode(tenantId);
-
   const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+
+  // Check if GHL is connected
+  const tenant = await prisma.tenant.findUnique({
+    where: { id: tenantId },
+    select: { ghlAccessToken: true, syncState: true, lastSyncError: true },
+  });
+  const ghlConnected = !!tenant?.ghlAccessToken;
 
   const [
     totalContacts,
@@ -21,6 +25,7 @@ export async function GET() {
     recentContacts,
     recentOpportunities,
     syncStatus,
+    pipelineCount,
   ] = await Promise.all([
     prisma.cachedContact.count({ where: { tenantId } }),
     prisma.cachedOpportunity.aggregate({
@@ -43,14 +48,17 @@ export async function GET() {
       select: { id: true, name: true, monetaryValue: true, status: true, updatedAt: true },
     }),
     prisma.syncStatus.findUnique({ where: { tenantId } }),
+    prisma.cachedPipeline.count({ where: { tenantId } }),
   ]);
 
   return NextResponse.json({
-    mode,
+    ghlConnected,
+    ghlError: tenant?.syncState === "error" ? tenant.lastSyncError : null,
     stats: {
       totalContacts,
       pipelineValue: pipelineValueResult._sum.monetaryValue ?? 0,
       activeConversations,
+      pipelineCount,
       recentContacts,
       recentOpportunities,
       lastSync: syncStatus?.lastFullSync ?? syncStatus?.lastIncrSync,

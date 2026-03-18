@@ -7,6 +7,7 @@ import { usePermissions } from "@/hooks/usePermissions";
 import { RoleGate } from "@/components/shared/RoleGate";
 import { GHLConnectionCard } from "./_components/GHLConnectionCard";
 import { TenantInfoCard } from "./_components/TenantInfoCard";
+import { SyncStatusCard } from "./_components/DataModeCard";
 import { TeamTable } from "./_components/TeamTable";
 import { TeamInviteCard } from "./_components/TeamInviteCard";
 import { GrouponMappingCard } from "./_components/GrouponMappingCard";
@@ -20,7 +21,6 @@ function SettingsToast() {
   useEffect(() => {
     if (searchParams.get("ghl_connected") === "true") {
       toast.success("GoHighLevel conectado correctamente");
-      // Clean up URL
       window.history.replaceState({}, "", "/settings");
     }
     if (searchParams.get("error") === "oauth_failed") {
@@ -92,6 +92,17 @@ export default function SettingsPage() {
         </div>
       </RoleGate>
 
+      {/* Sync status + manual sync button */}
+      <RoleGate permission="settings:tenant">
+        <SyncStatusCard
+          ghlConnected={!!tenant?.ghlLocationId}
+          loading={tenantLoading}
+          syncStatus={tenantData?.syncStatus}
+          syncState={tenant?.syncState}
+          lastSyncError={tenant?.lastSyncError}
+        />
+      </RoleGate>
+
       <RoleGate permission="settings:tenant">
         <SeasonCalendarCard />
       </RoleGate>
@@ -117,7 +128,6 @@ export default function SettingsPage() {
             </span>
           </div>
 
-          {/* Team Invite */}
           <TeamInviteCard
             onInvite={handleInvite}
             isPending={inviteMember.isPending}

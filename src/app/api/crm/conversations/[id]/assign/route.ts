@@ -21,14 +21,13 @@ export async function PUT(
 
   try {
     const mode = await getDataMode(tenantId);
-
-    if (mode === "live") {
-      const ghl = await getGHLClient(tenantId);
-      await ghl.updateConversation(id, { assignedTo: assignedTo ?? undefined });
-      log.info({ assignedTo }, "Conversation assigned via GHL");
-    } else {
-      log.info({ assignedTo }, "Conversation assigned (mock mode)");
+    if (mode === "disconnected") {
+      return NextResponse.json({ error: "GHL no conectado" }, { status: 400 });
     }
+
+    const ghl = await getGHLClient(tenantId);
+    await ghl.updateConversation(id, { assignedTo: assignedTo ?? undefined });
+    log.info({ assignedTo }, "Conversation assigned via GHL");
 
     return NextResponse.json({ success: true, assignedTo });
   } catch (error) {

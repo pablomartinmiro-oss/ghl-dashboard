@@ -1,10 +1,8 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth/config";
-import { createGHLClient } from "@/lib/ghl/client";
 import { getGHLClient } from "@/lib/ghl/api";
 import { getDataMode } from "@/lib/data/getDataMode";
 import { logger } from "@/lib/logger";
-import type { GHLNotesResponse } from "@/lib/ghl/types";
 
 export async function GET(
   _req: Request,
@@ -20,16 +18,13 @@ export async function GET(
 
   try {
     const mode = await getDataMode(tenantId);
-
-    if (mode === "live") {
-      const ghl = await getGHLClient(tenantId);
-      const notes = await ghl.getContactNotes(id);
-      return NextResponse.json({ notes });
+    if (mode === "disconnected") {
+      return NextResponse.json({ notes: [] });
     }
 
-    const client = await createGHLClient(tenantId);
-    const res = await client.get(`/contacts/${id}/notes`);
-    return NextResponse.json(res.data as GHLNotesResponse);
+    const ghl = await getGHLClient(tenantId);
+    const notes = await ghl.getContactNotes(id);
+    return NextResponse.json({ notes });
   } catch (error) {
     logger.error({ tenantId, contactId: id, error }, "Failed to fetch notes");
     return NextResponse.json(
@@ -54,19 +49,13 @@ export async function POST(
 
   try {
     const mode = await getDataMode(tenantId);
-
-    if (mode === "live") {
-      const ghl = await getGHLClient(tenantId);
-      const note = await ghl.addContactNote(id, body.body);
-      return NextResponse.json(note);
+    if (mode === "disconnected") {
+      return NextResponse.json({ error: "GHL no conectado" }, { status: 400 });
     }
 
-    const client = await createGHLClient(tenantId);
-    const res = await client.post(`/contacts/${id}/notes`, {
-      body: body.body,
-      userId: session.user.id,
-    });
-    return NextResponse.json(res.data);
+    const ghl = await getGHLClient(tenantId);
+    const note = await ghl.addContactNote(id, body.body);
+    return NextResponse.json(note);
   } catch (error) {
     logger.error({ tenantId, contactId: id, error }, "Failed to add note");
     return NextResponse.json(

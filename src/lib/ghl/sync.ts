@@ -250,8 +250,8 @@ async function syncAllContacts(
 
     hasMore = res.contacts.length === batchSize;
 
-    // Rate limit: wait 200ms between pages
-    await new Promise((r) => setTimeout(r, 200));
+    // Rate limit: wait 150ms between pages
+    await new Promise((r) => setTimeout(r, 150));
   }
 }
 
@@ -291,7 +291,7 @@ async function syncOpportunitiesForPipeline(
       hasMore = false;
     }
 
-    await new Promise((r) => setTimeout(r, 200));
+    await new Promise((r) => setTimeout(r, 150));
   }
 }
 
@@ -300,18 +300,34 @@ async function syncConversations(
   tenantId: string,
   progress: SyncProgress
 ) {
-  const res = await ghl.getConversations({ limit: 100 });
+  let hasMore = true;
+  let lastMessageDate: string | undefined;
+  const batchSize = 100;
 
-  if (!res.conversations) return;
+  while (hasMore) {
+    const res = await ghl.getConversations({ limit: batchSize });
 
-  for (const conv of res.conversations) {
-    const data = mapConversationToCache(tenantId, conv);
-    await prisma.cachedConversation.upsert({
-      where: { id: conv.id },
-      create: data,
-      update: stripId(data),
-    });
-    progress.conversations++;
+    if (!res.conversations || res.conversations.length === 0) {
+      hasMore = false;
+      break;
+    }
+
+    for (const conv of res.conversations) {
+      const data = mapConversationToCache(tenantId, conv);
+      await prisma.cachedConversation.upsert({
+        where: { id: conv.id },
+        create: data,
+        update: stripId(data),
+      });
+      progress.conversations++;
+      lastMessageDate = conv.lastMessageDate ?? lastMessageDate;
+    }
+
+    // GHL conversations search doesn't support cursor pagination well —
+    // stop after first batch to avoid duplicates (webhooks keep it fresh)
+    hasMore = false;
+
+    await new Promise((r) => setTimeout(r, 150));
   }
 }
 

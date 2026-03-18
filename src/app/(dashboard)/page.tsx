@@ -36,16 +36,18 @@ const RESERVATION_STATUS_COLORS: Record<string, string> = {
 };
 
 interface DashboardStats {
-  mode: "mock" | "live";
+  ghlConnected: boolean;
+  ghlError: string | null;
   stats: {
     totalContacts: number;
     pipelineValue: number;
     activeConversations: number;
+    pipelineCount: number;
     recentContacts: { id: string; name: string | null; email: string | null; source: string | null; updatedAt: string }[];
     recentOpportunities: { id: string; name: string | null; monetaryValue: number | null; status: string | null; updatedAt: string }[];
     lastSync: string | null;
     syncInProgress: boolean;
-  } | null;
+  };
 }
 
 function useDashboardStats() {
@@ -65,7 +67,7 @@ export default function DashboardHome() {
   const { data: resStats, isLoading: resStatsLoading } = useReservationStats();
 
   const allQuotes = useMemo(() => quotes ?? [], [quotes]);
-  const isLive = dashStats?.mode === "live" && dashStats.stats;
+  const hasGHLData = dashStats?.ghlConnected && dashStats.stats;
 
   const sent = allQuotes.filter((q) => q.status === "enviado" || q.status === "aceptado");
   const accepted = allQuotes.filter((q) => q.status === "aceptado");
@@ -93,7 +95,7 @@ export default function DashboardHome() {
         <h1 className="text-2xl font-bold tracking-tight text-text-primary">Dashboard</h1>
         <p className="text-sm text-text-secondary">
           Resumen de actividad de Skicenter
-          {isLive && dashStats.stats?.lastSync && (
+          {hasGHLData && dashStats.stats?.lastSync && (
             <span className="ml-2 text-xs text-sage">
               Sincronizado: {new Date(dashStats.stats.lastSync).toLocaleString("es-ES")}
             </span>
@@ -105,7 +107,7 @@ export default function DashboardHome() {
       <OnboardingCards />
 
       {/* GHL Live Stats — only shown in live mode */}
-      {isLive && dashStats.stats && (
+      {hasGHLData && dashStats.stats && (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <StatCard title="Contactos GHL" value={dashStats.stats.totalContacts.toLocaleString("es-ES")} description="en GoHighLevel" icon={Users} loading={statsLoading} iconColor="text-coral" iconBg="bg-coral-light" />
           <StatCard title="Valor Pipeline" value={formatCurrency(dashStats.stats.pipelineValue)} description="oportunidades abiertas" icon={BarChart3} loading={statsLoading} iconColor="text-sage" iconBg="bg-sage-light" />
@@ -212,7 +214,7 @@ export default function DashboardHome() {
         </div>
         <div className="space-y-3">
           {/* GHL recent activity */}
-          {isLive && dashStats.stats?.recentOpportunities.map((opp) => (
+          {hasGHLData && dashStats.stats?.recentOpportunities.map((opp) => (
             <div key={opp.id} className="flex items-center justify-between rounded-lg border border-border p-3">
               <div className="flex items-center gap-3">
                 <div className="h-2.5 w-2.5 rounded-full bg-sage" />
@@ -257,7 +259,7 @@ export default function DashboardHome() {
             </div>
           ))}
 
-          {recentReservations.length === 0 && recentQuotes.length === 0 && !quotesLoading && !resStatsLoading && !isLive && (
+          {recentReservations.length === 0 && recentQuotes.length === 0 && !quotesLoading && !resStatsLoading && !hasGHLData && (
             <p className="py-4 text-center text-sm text-text-secondary">Sin actividad reciente</p>
           )}
         </div>

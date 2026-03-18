@@ -21,31 +21,29 @@ export async function PUT(
 
   try {
     const mode = await getDataMode(tenantId);
-
-    if (mode === "live") {
-      const ghl = await getGHLClient(tenantId);
-      const updated = await ghl.updateOpportunity(id, body);
-
-      // Update cache immediately
-      await prisma.cachedOpportunity.updateMany({
-        where: { id, tenantId },
-        data: {
-          ...(body.stageId ? { pipelineStageId: body.stageId } : {}),
-          ...(body.status ? { status: body.status } : {}),
-          ...(body.monetaryValue !== undefined ? { monetaryValue: body.monetaryValue } : {}),
-          cachedAt: new Date(),
-        },
-      });
-
-      log.info("Opportunity updated in GHL + cache");
-      return NextResponse.json(updated);
+    if (mode === "disconnected") {
+      return NextResponse.json({ error: "GHL no conectado" }, { status: 400 });
     }
 
-    return NextResponse.json({ error: "Not available in mock mode" }, { status: 400 });
+    const ghl = await getGHLClient(tenantId);
+    const updated = await ghl.updateOpportunity(id, body);
+
+    // Update cache immediately
+    await prisma.cachedOpportunity.updateMany({
+      where: { id, tenantId },
+      data: {
+        ...(body.stageId ? { pipelineStageId: body.stageId } : {}),
+        ...(body.status ? { status: body.status } : {}),
+        ...(body.monetaryValue !== undefined ? { monetaryValue: body.monetaryValue } : {}),
+        cachedAt: new Date(),
+      },
+    });
+
+    log.info("Opportunity updated in GHL + cache");
+    return NextResponse.json(updated);
   } catch (error) {
     log.error({ error }, "Failed to update opportunity");
 
-    // Queue for retry
     await prisma.syncQueue.create({
       data: { tenantId, action: "updateOpportunity", resourceId: id, payload: body },
     });
