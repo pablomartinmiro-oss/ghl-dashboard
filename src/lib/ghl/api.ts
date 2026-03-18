@@ -281,22 +281,30 @@ export class GHLClient {
   }
 
   async getOrCreateConversation(contactId: string): Promise<GHLConversation> {
-    // Search for existing conversation for this contact
-    const searchRes = await this.http.get("/conversations/search", {
-      params: { locationId: this.locationId, contactId, limit: 1 },
-    });
-    const data = searchRes.data as GHLConversationsResponse;
-    if (data.conversations?.length > 0) {
-      this.log.info({ contactId, conversationId: data.conversations[0].id }, "Found existing GHL conversation");
-      return data.conversations[0];
+    // Search for existing conversation for this contact.
+    // GHL returns 404 (not empty array) when no conversations exist — catch and fall through.
+    try {
+      const searchRes = await this.http.get("/conversations/search", {
+        params: { locationId: this.locationId, contactId, limit: 1 },
+      });
+      const data = searchRes.data as GHLConversationsResponse;
+      if (data.conversations?.length > 0) {
+        this.log.info({ contactId, conversationId: data.conversations[0].id }, "Found existing GHL conversation");
+        return data.conversations[0];
+      }
+    } catch (searchErr) {
+      const status = (searchErr as { response?: { status?: number } }).response?.status;
+      this.log.info({ contactId, status }, "GHL conversation search returned error — will create new conversation");
     }
-    // Create new conversation
+
+    // Create new conversation for this contact
     this.log.info({ contactId }, "Creating new GHL conversation");
     const createRes = await this.http.post("/conversations/", {
       locationId: this.locationId,
       contactId,
     });
-    return (createRes.data as { conversation: GHLConversation }).conversation;
+    const created = createRes.data as { conversation?: GHLConversation } | GHLConversation;
+    return (created as { conversation?: GHLConversation }).conversation ?? (created as GHLConversation);
   }
 
   async getMessages(conversationId: string): Promise<GHLMessage[]> {
