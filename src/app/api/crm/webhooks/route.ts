@@ -7,6 +7,7 @@ import {
   invalidateConversationCaches,
   invalidateOpportunityCaches,
 } from "@/lib/cache/invalidation";
+import { maybeCreateQuoteFromSurvey } from "@/lib/quotes/from-survey";
 import {
   upsertCachedContact,
   deleteCachedContact,
@@ -93,9 +94,17 @@ export async function POST(req: NextRequest) {
     switch (type) {
       // ==================== CONTACTS ====================
       case "ContactCreate":
+        await upsertCachedContact(tenantId, data);
+        await invalidateContactCaches(tenantId, (data.contactId as string) ?? (data.id as string));
+        // Auto-create draft quote if contact has survey data
+        await maybeCreateQuoteFromSurvey(tenantId, data).catch((err) =>
+          log.error({ error: err }, "Failed to create quote from survey")
+        );
+        break;
+
       case "ContactUpdate":
         await upsertCachedContact(tenantId, data);
-        await invalidateContactCaches(tenantId, data.contactId as string ?? data.id as string);
+        await invalidateContactCaches(tenantId, (data.contactId as string) ?? (data.id as string));
         break;
 
       case "ContactDelete":

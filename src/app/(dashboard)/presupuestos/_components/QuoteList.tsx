@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Search, MapPin, Calendar, Users, Clock } from "lucide-react";
+import { Search, MapPin, Calendar, Users, Clock, FormInput } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Quote } from "@/hooks/useQuotes";
 import { STATIONS } from "../../reservas/_components/constants";
@@ -113,9 +113,16 @@ export function QuoteList({ quotes, selectedId, onSelect }: QuoteListProps) {
                 )}
               >
                 <div className="flex items-start justify-between">
-                  <h3 className="font-medium text-sm text-text-primary">
-                    {quote.clientName}
-                  </h3>
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <h3 className="font-medium text-sm text-text-primary">
+                      {quote.clientName}
+                    </h3>
+                    {quote.source === "survey" && (
+                      <span className="flex items-center gap-0.5 rounded-full bg-soft-blue-light px-1.5 py-0.5 text-[10px] font-medium text-soft-blue">
+                        <FormInput className="h-2.5 w-2.5" /> Formulario
+                      </span>
+                    )}
+                  </div>
                   <span className={cn("rounded-full px-2 py-0.5 text-xs font-medium", config.color)}>
                     {config.label}
                   </span>

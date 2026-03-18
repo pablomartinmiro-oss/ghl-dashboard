@@ -32,6 +32,7 @@ interface Quote {
   wantsClases: boolean;
   wantsEquipment: boolean;
   status: string;
+  source: string | null;
   totalAmount: number;
   expiresAt: string | null;
   sentAt: string | null;

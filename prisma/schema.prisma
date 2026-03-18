@@ -235,6 +235,7 @@ model Quote {
   ghlStageId       String?             // Current stage ID
 
   // Internal
+  source           String?             // "manual" | "survey" (auto-created from GHL webhook)
   internalNotes    String?
   cancelledAt      DateTime?
   cancelReason     String?
