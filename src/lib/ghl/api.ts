@@ -313,7 +313,7 @@ export class GHLClient {
   }
 
   async sendMessage(conversationId: string, data: Omit<SendMessageData, "conversationId">): Promise<GHLMessage> {
-    const res = await this.http.post(`/conversations/${conversationId}/messages`, data);
+    const res = await this.http.post("/conversations/messages", { conversationId, ...data });
     return res.data as GHLMessage;
   }
 
