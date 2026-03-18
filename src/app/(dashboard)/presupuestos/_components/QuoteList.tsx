@@ -32,7 +32,13 @@ export function QuoteList({ quotes, selectedId, onSelect }: QuoteListProps) {
   const [filterDestination, setFilterDestination] = useState<string>("");
 
   const filtered = quotes.filter((q) => {
-    if (search && !q.clientName.toLowerCase().includes(search.toLowerCase())) return false;
+    if (search) {
+      const s = search.toLowerCase();
+      const matchName = q.clientName?.toLowerCase().includes(s);
+      const matchEmail = q.clientEmail?.toLowerCase().includes(s);
+      const matchPhone = q.clientPhone?.includes(s);
+      if (!matchName && !matchEmail && !matchPhone) return false;
+    }
     if (filterStatus && q.status !== filterStatus) return false;
     if (filterDestination && q.destination !== filterDestination) return false;
     return true;

@@ -15,7 +15,8 @@ export async function GET(req: Request) {
   const { tenantId } = session.user;
   const log = logger.child({ tenantId, path: "/api/crm/contacts" });
   const url = new URL(req.url);
-  const query = url.searchParams.get("query") ?? "";
+  // Accept both ?search= (new) and ?query= (legacy)
+  const query = url.searchParams.get("search") ?? url.searchParams.get("query") ?? "";
   const page = parseInt(url.searchParams.get("page") ?? "1");
   const limit = parseInt(url.searchParams.get("limit") ?? "50");
 

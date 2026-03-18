@@ -52,6 +52,7 @@ export async function POST(request: NextRequest) {
       clientName, clientEmail, clientPhone, clientNotes,
       destination, checkIn, checkOut, adults, children,
       wantsAccommodation, wantsForfait, wantsClases, wantsEquipment,
+      ghlContactId,
     } = body as Record<string, unknown>;
 
     const quote = await prisma.quote.create({
@@ -61,6 +62,7 @@ export async function POST(request: NextRequest) {
         clientEmail: (clientEmail as string) || null,
         clientPhone: (clientPhone as string) || null,
         clientNotes: (clientNotes as string) || null,
+        ghlContactId: (ghlContactId as string) || null,
         destination: destination as string,
         checkIn: new Date(checkIn as string),
         checkOut: new Date(checkOut as string),
