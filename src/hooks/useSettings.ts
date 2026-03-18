@@ -116,3 +116,18 @@ export function useInviteTeamMember() {
     },
   });
 }
+
+export function useResendInvite() {
+  return useMutation({
+    mutationFn: async (userId: string) => {
+      const res = await fetch(`/api/settings/team/${userId}/resend-invite`, {
+        method: "POST",
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error ?? "Failed to resend invite");
+      }
+      return res.json() as Promise<{ success: boolean }>;
+    },
+  });
+}

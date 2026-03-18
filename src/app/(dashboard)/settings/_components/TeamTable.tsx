@@ -1,6 +1,7 @@
 "use client";
 
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Table,
   TableBody,
@@ -10,6 +11,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { TableSkeleton } from "@/components/shared/LoadingSkeleton";
+import { MailIcon } from "lucide-react";
 
 interface TeamUser {
   id: string;
@@ -33,6 +35,8 @@ interface TeamTableProps {
   loading: boolean;
   canManage: boolean;
   onRoleChange: (userId: string, roleId: string) => void;
+  onResendInvite?: (userId: string) => void;
+  resendingId?: string | null;
 }
 
 function formatDate(dateStr: string | null): string {
@@ -50,6 +54,8 @@ export function TeamTable({
   loading,
   canManage,
   onRoleChange,
+  onResendInvite,
+  resendingId,
 }: TeamTableProps) {
   if (loading) return <TableSkeleton rows={4} />;
 
@@ -63,6 +69,7 @@ export function TeamTable({
             <TableHead>Rol</TableHead>
             <TableHead>Estado</TableHead>
             <TableHead>Último acceso</TableHead>
+            {canManage && <TableHead />}
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -99,6 +106,22 @@ export function TeamTable({
               <TableCell className="text-text-secondary">
                 {formatDate(user.lastLoginAt)}
               </TableCell>
+              {canManage && (
+                <TableCell>
+                  {!user.isActive && onResendInvite && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={resendingId === user.id}
+                      onClick={() => onResendInvite(user.id)}
+                      className="h-7 gap-1 px-2 text-xs"
+                    >
+                      <MailIcon className="h-3 w-3" />
+                      {resendingId === user.id ? "Enviando..." : "Reenviar"}
+                    </Button>
+                  )}
+                </TableCell>
+              )}
             </TableRow>
           ))}
         </TableBody>

@@ -2,7 +2,7 @@
 
 import { useMemo, useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-import { useTenantSettings, useTeam, useUpdateUserRole, useInviteTeamMember } from "@/hooks/useSettings";
+import { useTenantSettings, useTeam, useUpdateUserRole, useInviteTeamMember, useResendInvite } from "@/hooks/useSettings";
 import { usePermissions } from "@/hooks/usePermissions";
 import { RoleGate } from "@/components/shared/RoleGate";
 import { GHLConnectionCard } from "./_components/GHLConnectionCard";
@@ -37,7 +37,9 @@ export default function SettingsPage() {
   const { data: teamData, isLoading: teamLoading } = useTeam();
   const updateRole = useUpdateUserRole();
   const inviteMember = useInviteTeamMember();
+  const resendInvite = useResendInvite();
   const [inviteUrl, setInviteUrl] = useState<string | null>(null);
+  const [resendingId, setResendingId] = useState<string | null>(null);
 
   const tenant = tenantData?.tenant;
   const users = useMemo(() => teamData?.users ?? [], [teamData]);
@@ -53,11 +55,20 @@ export default function SettingsPage() {
     );
   }
 
+  function handleResendInvite(userId: string) {
+    setResendingId(userId);
+    resendInvite.mutate(userId, {
+      onSuccess: () => toast.success("Invitación reenviada"),
+      onError: (err) => toast.error(err.message),
+      onSettled: () => setResendingId(null),
+    });
+  }
+
   function handleInvite(email: string) {
     inviteMember.mutate(email, {
       onSuccess: (data) => {
         setInviteUrl(data.inviteUrl);
-        toast.success("Invitación creada");
+        toast.success("Invitación enviada por email");
       },
       onError: (err) => toast.error(err.message),
     });
@@ -141,6 +152,8 @@ export default function SettingsPage() {
             loading={teamLoading}
             canManage={can("settings:team")}
             onRoleChange={handleRoleChange}
+            onResendInvite={handleResendInvite}
+            resendingId={resendingId}
           />
         </div>
       </RoleGate>
