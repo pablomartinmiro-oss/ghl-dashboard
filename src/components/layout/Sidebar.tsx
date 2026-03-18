@@ -75,7 +75,7 @@ const NAV_ITEMS: NavItem[] = [
   },
   {
     label: "Pipeline",
-    href: "/pipelines",
+    href: "/pipeline",
     icon: Kanban,
     permission: "pipelines:view",
     roles: ["Owner / Manager"],

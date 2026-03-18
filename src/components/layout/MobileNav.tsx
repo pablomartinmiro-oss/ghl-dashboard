@@ -38,7 +38,7 @@ const NAV_ITEMS: MobileNavItem[] = [
   { label: "Catálogo", href: "/catalogo", icon: Package, permission: null },
   { label: "Comunicaciones", href: "/comms", icon: MessageSquare, permission: "comms:view" },
   { label: "Contactos", href: "/contacts", icon: Users, permission: "contacts:view" },
-  { label: "Pipeline", href: "/pipelines", icon: Kanban, permission: "pipelines:view" },
+  { label: "Pipeline", href: "/pipeline", icon: Kanban, permission: "pipelines:view" },
   { label: "Ajustes", href: "/settings", icon: Settings, permission: "settings:team" },
 ];
 
