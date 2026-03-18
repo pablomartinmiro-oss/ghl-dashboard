@@ -1,12 +1,12 @@
 # GHL Dashboard — Build Progress
 
 ## Current Status
-- **Phase:** PHASE T complete + GHL live connected + Nexor data imported
-- **Step:** Ready for Presupuestos module (Phase U)
+- **Phase:** PHASE U complete — Presupuestos fully wired (Redsys + GHL pipeline + PDF + email)
+- **Step:** Ready for Phase V — decide next feature area
 - **Live URL:** https://crm-dash-prod.up.railway.app
-- **Last pushed commit:** 67d1601 (2026-03-17)
-- **Last deployed commit:** fc2e8d0 (2026-03-16) — phases R-T not yet deployed
-- **Date:** 2026-03-17
+- **Last pushed commit:** cb6fa70 (2026-03-18)
+- **Last deployed commit:** fc2e8d0 (2026-03-16) — phases R-U pushed to git, Railway auto-deploys
+- **Date:** 2026-03-18
 
 ## What the App Does Today
 
@@ -170,12 +170,18 @@ A fully functional multi-tenant CRM dashboard for Skicenter ski travel agencies,
 - **Redsys + SMTP env vars** added to Railway
 - **PRESUPUESTOS-ARCHITECTURE-v2.md** ready
 
-### Next Session: Presupuestos Module (Phase U)
-- Build Presupuestos module (replaces BDR/SkiSolution360)
-- Read `PRESUPUESTOS-ARCHITECTURE-v2.md` for full spec
-- Backend: Redsys integration, email service, quote API routes, PDF generation
-- Frontend: presupuestos list, create, detail pages (all UI in Spanish)
-- Integration: GHL pipeline moves, Redsys webhook, automatic reminders
+### Phase U: Presupuestos v2 — Redsys + GHL + PDF + Email (2026-03-18) ✅
+- **QuoteDetail** status-aware UI: editable for nuevo/borrador, read-only for pagado/cancelado
+- **Send flow**: POST `/api/quotes/:id/send` → generates Redsys payment link + PDF + sends email
+- **Payment flow**: POST `/api/quotes/:id/mark-paid` → marks paid, moves GHL opp to "COMPRA" (won)
+- **GHL pipeline moves**: `src/lib/ghl/stages.ts` — findStageByName() searches all pipelines, caches 1h TTL
+- **Send** moves opp to "PRESUPUESTO" stage; **mark-paid** sets monetaryValue + status=won → "COMPRA" stage
+- **Public Redsys pages**: `/presupuestos/[id]/success` and `/presupuestos/[id]/error` (no auth required)
+- **useQuotes hooks**: `useSendQuote()` + `useMarkPaid()` mutations
+- **QuoteList**: pagado/expirado/cancelado status badges
+- Middleware updated to allow public `/presupuestos/:id/success|error` paths
+
+### Next: Phase V — TBD
 
 ## DB Migrations
 1. `init` — Core models (Tenant, User, Role, Reservation, etc.)
