@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
   const log = logger.child({ path: "/api/crm/webhooks" });
 
   const rawBody = await req.text();
-  console.log("[WEBHOOK] Received:", req.method, rawBody.substring(0, 500));
+  console.log("[WEBHOOK] Received:", req.method, rawBody);
   const signature = req.headers.get("x-ghl-signature");
 
   if (!verifySignature(rawBody, signature)) {

@@ -8,6 +8,7 @@ import { prisma } from "@/lib/db";
 import { logger } from "@/lib/logger";
 import { sendEmail } from "@/lib/email/client";
 import { createSurveyOpportunity } from "./opportunity";
+import { getCustomFieldIdToKeyMap } from "@/lib/ghl/custom-fields";
 
 interface QuoteItemInput {
   productId: string | null;
@@ -60,17 +61,24 @@ function normaliseDestination(raw: string): string {
 
 // ==================== CUSTOM FIELD EXTRACTION ====================
 
-type RawCustomFields =
-  | Array<{ id?: string; key?: string; field_value?: string; value?: string }>
-  | Record<string, string>
-  | null
-  | undefined;
+// GHL webhooks send: { id, value } (no key). value can be string or string[].
+type RawCf = { id?: string; key?: string; field_value?: string; value?: string | string[] };
+type RawCustomFields = Array<RawCf> | Record<string, string> | null | undefined;
 
-function extractFields(cf: RawCustomFields): Record<string, string> {
+/**
+ * Extract custom fields into a flat Record<key, value>.
+ * idKeyMap resolves GHL webhook IDs to fieldKey names when `key` is absent.
+ */
+function extractFields(cf: RawCustomFields, idKeyMap: Record<string, string> = {}): Record<string, string> {
   if (!cf) return {};
   if (Array.isArray(cf)) {
     const out: Record<string, string> = {};
-    for (const f of cf) if (f.key) out[f.key] = String(f.field_value ?? f.value ?? "");
+    for (const f of cf) {
+      const key = f.key ?? (f.id ? idKeyMap[f.id] : undefined);
+      if (!key) continue;
+      const raw = f.field_value ?? f.value;
+      out[key] = Array.isArray(raw) ? raw.join(",") : String(raw ?? "");
+    }
     return out;
   }
   const out: Record<string, string> = {};
@@ -193,12 +201,24 @@ function confirmationEmailHtml(name: string, destination: string, ci: string, co
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function maybeCreateQuoteFromSurvey(tenantId: string, contactData: Record<string, any>): Promise<void> {
-  const fields = extractFields(contactData.customFields as RawCustomFields);
+  console.log("[SURVEY] Custom fields received:", JSON.stringify(contactData.customFields));
+
+  // GHL webhooks send custom fields by ID — resolve to key names via cached field map
+  const idKeyMap = await getCustomFieldIdToKeyMap(tenantId).catch(() => ({} as Record<string, string>));
+  console.log("[SURVEY] ID→key map:", JSON.stringify(idKeyMap));
+
+  const fields = extractFields(contactData.customFields as RawCustomFields, idKeyMap);
+  console.log("[SURVEY] Resolved fields:", JSON.stringify(fields));
+
   const rawDestino = fields[SURVEY_KEYS.destino];
   const rawCheckIn = fields[SURVEY_KEYS.checkIn];
+  const hasSurveyData = !!(rawDestino && rawCheckIn);
+  console.log("[SURVEY] Destino value:", rawDestino);
+  console.log("[SURVEY] CheckIn value:", rawCheckIn);
+  console.log("[SURVEY] Survey detected:", hasSurveyData);
 
   // Only proceed if core survey fields are present
-  if (!rawDestino || !rawCheckIn) return;
+  if (!hasSurveyData) return;
 
   const rawCheckOut = fields[SURVEY_KEYS.checkOut] || rawCheckIn;
   const adults = Math.max(1, parseInt(fields[SURVEY_KEYS.adults] ?? "1", 10) || 1);
