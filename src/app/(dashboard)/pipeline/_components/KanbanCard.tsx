@@ -2,7 +2,7 @@
 
 import { useDraggable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
-import { User } from "lucide-react";
+import { User, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { GHLOpportunity } from "@/lib/ghl/types";
 
@@ -21,6 +21,10 @@ function formatCurrency(value: number): string {
   }).format(value);
 }
 
+function getDaysInStage(createdAt: string): number {
+  return Math.floor((Date.now() - new Date(createdAt).getTime()) / 86400000);
+}
+
 export function KanbanCard({ opportunity, isDragOverlay, onClick }: KanbanCardProps) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: opportunity.id,
@@ -29,6 +33,8 @@ export function KanbanCard({ opportunity, isDragOverlay, onClick }: KanbanCardPr
   const style = transform
     ? { transform: CSS.Translate.toString(transform) }
     : undefined;
+
+  const daysInStage = getDaysInStage(opportunity.createdAt);
 
   return (
     <div
@@ -59,7 +65,20 @@ export function KanbanCard({ opportunity, isDragOverlay, onClick }: KanbanCardPr
           </div>
         )}
       </div>
-      <p className="mt-1.5 text-[10px] text-text-secondary">{opportunity.status}</p>
+      <div className="mt-1.5 flex items-center justify-between">
+        <p className="text-[10px] text-text-secondary capitalize">{opportunity.status}</p>
+        {daysInStage >= 7 && (
+          <span className={cn(
+            "flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[10px] font-medium",
+            daysInStage >= 30
+              ? "bg-red-100 text-red-600"
+              : "bg-gold-light text-gold"
+          )}>
+            <Clock className="h-2.5 w-2.5" />
+            {daysInStage}d
+          </span>
+        )}
+      </div>
     </div>
   );
 }

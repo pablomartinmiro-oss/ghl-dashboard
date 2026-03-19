@@ -48,32 +48,55 @@ export function MessageThread({ messages, loading }: MessageThreadProps) {
     (a, b) => new Date(a.dateAdded).getTime() - new Date(b.dateAdded).getTime()
   );
 
+  // Group messages by day
+  const groups: { label: string; messages: typeof sorted }[] = [];
+  for (const msg of sorted) {
+    const label = getDayLabel(new Date(msg.dateAdded));
+    const last = groups[groups.length - 1];
+    if (last && last.label === label) {
+      last.messages.push(msg);
+    } else {
+      groups.push({ label, messages: [msg] });
+    }
+  }
+
   return (
     <div className="flex-1 overflow-y-auto bg-surface p-4">
-      <div className="space-y-3">
-        {sorted.map((msg) => (
-          <div
-            key={msg.id}
-            className={cn(
-              "flex",
-              msg.direction === "outbound" ? "justify-end" : "justify-start"
-            )}
-          >
-            <div
-              className={cn(
-                "max-w-[75%] rounded-2xl px-4 py-2.5 text-sm",
-                msg.direction === "outbound"
-                  ? "bg-coral-light text-text-primary"
-                  : "bg-white text-text-primary shadow-[0_1px_2px_rgba(0,0,0,0.06)]"
-              )}
-            >
-              <p className="whitespace-pre-wrap">{msg.body}</p>
-              <p className="mt-1 text-[10px] text-text-secondary">
-                {new Date(msg.dateAdded).toLocaleTimeString("es-ES", {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
-              </p>
+      <div className="space-y-4">
+        {groups.map((group) => (
+          <div key={group.label}>
+            <div className="mb-3 flex items-center gap-2">
+              <div className="h-px flex-1 bg-border" />
+              <span className="text-[11px] font-medium text-text-secondary">{group.label}</span>
+              <div className="h-px flex-1 bg-border" />
+            </div>
+            <div className="space-y-3">
+              {group.messages.map((msg) => (
+                <div
+                  key={msg.id}
+                  className={cn(
+                    "flex",
+                    msg.direction === "outbound" ? "justify-end" : "justify-start"
+                  )}
+                >
+                  <div
+                    className={cn(
+                      "max-w-[75%] rounded-2xl px-4 py-2.5 text-sm",
+                      msg.direction === "outbound"
+                        ? "bg-coral-light text-text-primary"
+                        : "bg-white text-text-primary shadow-[0_1px_2px_rgba(0,0,0,0.06)]"
+                    )}
+                  >
+                    <p className="whitespace-pre-wrap">{msg.body}</p>
+                    <p className="mt-1 text-[10px] text-text-secondary">
+                      {new Date(msg.dateAdded).toLocaleTimeString("es-ES", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </p>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         ))}
@@ -81,4 +104,17 @@ export function MessageThread({ messages, loading }: MessageThreadProps) {
       <div ref={bottomRef} />
     </div>
   );
+}
+
+function getDayLabel(date: Date): string {
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const yesterday = new Date(today.getTime() - 86400000);
+  const msgDay = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  const diffDays = Math.floor((today.getTime() - msgDay.getTime()) / 86400000);
+
+  if (msgDay.getTime() === today.getTime()) return "Hoy";
+  if (msgDay.getTime() === yesterday.getTime()) return "Ayer";
+  if (diffDays < 7) return date.toLocaleDateString("es-ES", { weekday: "long" });
+  return date.toLocaleDateString("es-ES", { day: "numeric", month: "long", year: "numeric" });
 }

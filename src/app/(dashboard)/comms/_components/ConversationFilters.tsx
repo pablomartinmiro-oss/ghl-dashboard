@@ -11,6 +11,7 @@ interface ConversationFiltersProps {
   onTabChange: (tab: FilterTab) => void;
   activeChannel: ChannelFilter;
   onChannelChange: (channel: ChannelFilter) => void;
+  counts?: { all: number; unread: number; mine: number; unassigned: number };
 }
 
 const TABS: { value: FilterTab; label: string }[] = [
@@ -34,25 +35,37 @@ export function ConversationFilters({
   onTabChange,
   activeChannel,
   onChannelChange,
+  counts,
 }: ConversationFiltersProps) {
   return (
     <div className="space-y-1 border-b border-border px-3 pb-2">
       {/* Status filters */}
       <div className="flex gap-1">
-        {TABS.map((tab) => (
-          <button
-            key={tab.value}
-            onClick={() => onTabChange(tab.value)}
-            className={cn(
-              "rounded-lg px-3 py-1.5 text-xs font-medium transition-colors",
-              activeTab === tab.value
-                ? "bg-coral-light text-coral"
-                : "text-text-secondary hover:bg-warm-muted hover:text-text-primary"
-            )}
-          >
-            {tab.label}
-          </button>
-        ))}
+        {TABS.map((tab) => {
+          const count = counts?.[tab.value];
+          return (
+            <button
+              key={tab.value}
+              onClick={() => onTabChange(tab.value)}
+              className={cn(
+                "flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors",
+                activeTab === tab.value
+                  ? "bg-coral-light text-coral"
+                  : "text-text-secondary hover:bg-warm-muted hover:text-text-primary"
+              )}
+            >
+              {tab.label}
+              {count !== undefined && count > 0 && (
+                <span className={cn(
+                  "rounded-full px-1.5 py-0.5 text-[10px] font-bold leading-none",
+                  activeTab === tab.value ? "bg-coral text-white" : "bg-muted text-text-secondary"
+                )}>
+                  {count}
+                </span>
+              )}
+            </button>
+          );
+        })}
       </div>
       {/* Channel filters */}
       <div className="flex gap-1 overflow-x-auto">

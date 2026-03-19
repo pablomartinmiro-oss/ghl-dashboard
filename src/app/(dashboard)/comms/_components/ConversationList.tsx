@@ -29,6 +29,13 @@ export function ConversationList({
   const [channelFilter, setChannelFilter] = useState<ChannelFilter>("all");
   const [search, setSearch] = useState("");
 
+  const counts = useMemo(() => ({
+    all: conversations.length,
+    unread: conversations.filter((c) => c.unreadCount > 0).length,
+    mine: conversations.filter((c) => c.assignedTo === currentUserId).length,
+    unassigned: conversations.filter((c) => !c.assignedTo).length,
+  }), [conversations, currentUserId]);
+
   const filtered = useMemo(() => {
     let list = conversations;
 
@@ -85,6 +92,7 @@ export function ConversationList({
         onTabChange={setFilter}
         activeChannel={channelFilter}
         onChannelChange={setChannelFilter}
+        counts={counts}
       />
 
       {/* List */}

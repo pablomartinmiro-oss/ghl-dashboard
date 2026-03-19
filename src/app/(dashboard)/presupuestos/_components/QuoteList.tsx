@@ -89,6 +89,9 @@ export function QuoteList({ quotes, selectedId, onSelect }: QuoteListProps) {
             ))}
           </select>
         </div>
+
+        {/* Status count pills */}
+        <StatusCountBar quotes={quotes} activeStatus={filterStatus} onSelect={setFilterStatus} />
       </div>
 
       {/* Quote cards */}
@@ -183,6 +186,39 @@ function ExpiryBadge({ expiresAt }: { expiresAt: string }) {
     return <span className="flex items-center gap-0.5 rounded-full bg-gold-light px-1.5 py-0.5 text-[10px] font-medium text-gold"><Clock className="h-2.5 w-2.5" /> {diffDays}d</span>;
   }
   return <span className="flex items-center gap-0.5 text-[10px] text-text-secondary"><Clock className="h-2.5 w-2.5" /> {diffDays}d</span>;
+}
+
+function StatusCountBar({ quotes, activeStatus, onSelect }: {
+  quotes: Quote[];
+  activeStatus: string;
+  onSelect: (s: string) => void;
+}) {
+  const counts = Object.keys(STATUS_CONFIG).map((key) => ({
+    key,
+    count: quotes.filter((q) => q.status === key).length,
+    config: STATUS_CONFIG[key],
+  })).filter((s) => s.count > 0);
+
+  if (counts.length === 0) return null;
+
+  return (
+    <div className="mt-2 flex flex-wrap gap-1.5">
+      {counts.map(({ key, count, config }) => (
+        <button
+          key={key}
+          onClick={() => onSelect(activeStatus === key ? "" : key)}
+          className={cn(
+            "rounded-full px-2 py-0.5 text-[10px] font-medium transition-colors",
+            activeStatus === key
+              ? config.color + " ring-1 ring-current"
+              : config.color + " opacity-70 hover:opacity-100"
+          )}
+        >
+          {config.label} {count}
+        </button>
+      ))}
+    </div>
+  );
 }
 
 export { STATUS_CONFIG };

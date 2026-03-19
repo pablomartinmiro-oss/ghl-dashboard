@@ -1,11 +1,12 @@
 "use client";
 
 import { useMemo } from "react";
+import Link from "next/link";
 import {
-  FileText, Send, TrendingUp, Euro, Users, MessageCircle,
-  BarChart3, CalendarCheck, Snowflake, Target, Trophy, XCircle,
+  Euro, Users, MessageCircle,
+  BarChart3, CalendarCheck, Snowflake, Target, Trophy, XCircle, Send, RefreshCw,
 } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useQuotes } from "@/hooks/useQuotes";
 import { useReservationStats } from "@/hooks/useReservations";
 import { StatCard } from "./_components/StatCard";
@@ -81,10 +82,27 @@ function useDashboardStats() {
   });
 }
 
+function formatRelativeSync(dateStr: string): string {
+  const diffMs = Date.now() - new Date(dateStr).getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  if (diffMins < 1) return "ahora mismo";
+  if (diffMins < 60) return `hace ${diffMins} min`;
+  const diffHours = Math.floor(diffMins / 60);
+  if (diffHours < 24) return `hace ${diffHours}h`;
+  return `hace ${Math.floor(diffHours / 24)}d`;
+}
+
 export default function DashboardHome() {
+  const queryClient = useQueryClient();
   const { data: quotes, isLoading: quotesLoading } = useQuotes();
-  const { data: dashStats, isLoading: statsLoading } = useDashboardStats();
+  const { data: dashStats, isLoading: statsLoading, isFetching: statsFetching } = useDashboardStats();
   const { data: resStats, isLoading: resStatsLoading } = useReservationStats();
+
+  function handleRefresh() {
+    queryClient.invalidateQueries({ queryKey: ["dashboard-stats"] });
+    queryClient.invalidateQueries({ queryKey: ["quotes"] });
+    queryClient.invalidateQueries({ queryKey: ["reservation-stats"] });
+  }
 
   const allQuotes = useMemo(() => quotes ?? [], [quotes]);
   const hasGHLData = dashStats?.ghlConnected && dashStats.stats;
@@ -110,16 +128,26 @@ export default function DashboardHome() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight text-text-primary">Dashboard</h1>
-        <p className="text-sm text-text-secondary">
-          Resumen de actividad de Skicenter
-          {hasGHLData && stats?.lastSync && (
-            <span className="ml-2 text-xs text-sage">
-              Sincronizado: {new Date(stats.lastSync).toLocaleString("es-ES")}
-            </span>
-          )}
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-text-primary">Dashboard</h1>
+          <p className="text-sm text-text-secondary">
+            Resumen de actividad de Skicenter
+            {hasGHLData && stats?.lastSync && (
+              <span className="ml-2 text-xs text-sage">
+                · Sincronizado {formatRelativeSync(stats.lastSync)}
+              </span>
+            )}
+          </p>
+        </div>
+        <button
+          onClick={handleRefresh}
+          disabled={statsFetching}
+          className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-text-secondary hover:bg-surface transition-colors disabled:opacity-50"
+        >
+          <RefreshCw className={`h-3.5 w-3.5 ${statsFetching ? "animate-spin" : ""}`} />
+          Actualizar
+        </button>
       </div>
 
       <OnboardingCards />
@@ -127,10 +155,10 @@ export default function DashboardHome() {
       {/* GHL KPI Cards */}
       {hasGHLData && stats && (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <StatCard title="Contactos" value={stats.totalContacts.toLocaleString("es-ES")} description="en GoHighLevel" icon={Users} loading={statsLoading} iconColor="text-coral" iconBg="bg-coral-light" />
-          <StatCard title="Oportunidades" value={stats.totalOpportunities.toLocaleString("es-ES")} description={`${stats.pipelineCount} pipelines`} icon={Target} loading={statsLoading} iconColor="text-soft-blue" iconBg="bg-soft-blue-light" />
-          <StatCard title="Valor Pipeline" value={formatCurrency(stats.pipelineValue)} description="oportunidades abiertas" icon={BarChart3} loading={statsLoading} iconColor="text-sage" iconBg="bg-sage-light" />
-          <StatCard title="Conversaciones" value={stats.activeConversations} description="últimos 7 días" icon={MessageCircle} loading={statsLoading} iconColor="text-gold" iconBg="bg-gold-light" />
+          <Link href="/contacts"><StatCard title="Contactos" value={stats.totalContacts.toLocaleString("es-ES")} description="en GoHighLevel" icon={Users} loading={statsLoading} iconColor="text-coral" iconBg="bg-coral-light" /></Link>
+          <Link href="/pipeline"><StatCard title="Oportunidades" value={stats.totalOpportunities.toLocaleString("es-ES")} description={`${stats.pipelineCount} pipelines`} icon={Target} loading={statsLoading} iconColor="text-soft-blue" iconBg="bg-soft-blue-light" /></Link>
+          <Link href="/pipeline"><StatCard title="Valor Pipeline" value={formatCurrency(stats.pipelineValue)} description="oportunidades abiertas" icon={BarChart3} loading={statsLoading} iconColor="text-sage" iconBg="bg-sage-light" /></Link>
+          <Link href="/comms"><StatCard title="Conversaciones" value={stats.activeConversations} description="últimos 7 días" icon={MessageCircle} loading={statsLoading} iconColor="text-gold" iconBg="bg-gold-light" /></Link>
         </div>
       )}
 
@@ -138,12 +166,12 @@ export default function DashboardHome() {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {hasGHLData && stats && (
           <>
-            <StatCard title="Deals Ganados" value={stats.wonDeals} description="cerrados con éxito" icon={Trophy} loading={statsLoading} iconColor="text-sage" iconBg="bg-sage-light" />
-            <StatCard title="Deals Perdidos" value={stats.lostDeals} description="no convertidos" icon={XCircle} loading={statsLoading} iconColor="text-muted-red" iconBg="bg-red-50" />
+            <Link href="/pipeline"><StatCard title="Deals Ganados" value={stats.wonDeals} description="cerrados con éxito" icon={Trophy} loading={statsLoading} iconColor="text-sage" iconBg="bg-sage-light" /></Link>
+            <Link href="/pipeline"><StatCard title="Deals Perdidos" value={stats.lostDeals} description="no convertidos" icon={XCircle} loading={statsLoading} iconColor="text-muted-red" iconBg="bg-red-50" /></Link>
           </>
         )}
-        <StatCard title="Reservas Hoy" value={resStats?.today.total ?? 0} description={`${resStats?.today.confirmed ?? 0} confirmadas`} icon={CalendarCheck} loading={resStatsLoading} iconColor="text-coral" iconBg="bg-coral-light" />
-        <StatCard title="Ingresos Semanales" value={formatCurrency(resStats?.weekly.totalRevenue ?? 0)} description={`${resStats?.weekly.totalReservations ?? 0} reservas`} icon={Euro} loading={resStatsLoading} iconColor="text-sage" iconBg="bg-sage-light" />
+        <Link href="/reservas"><StatCard title="Reservas Hoy" value={resStats?.today.total ?? 0} description={`${resStats?.today.confirmed ?? 0} confirmadas`} icon={CalendarCheck} loading={resStatsLoading} iconColor="text-coral" iconBg="bg-coral-light" /></Link>
+        <Link href="/reservas"><StatCard title="Ingresos Semanales" value={formatCurrency(resStats?.weekly.totalRevenue ?? 0)} description={`${resStats?.weekly.totalReservations ?? 0} reservas`} icon={Euro} loading={resStatsLoading} iconColor="text-sage" iconBg="bg-sage-light" /></Link>
       </div>
 
       {/* Charts row */}
@@ -286,6 +314,10 @@ export default function DashboardHome() {
       <div className="rounded-2xl bg-white p-5 shadow-[0_1px_3px_rgba(0,0,0,0.04)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.06)] transition-shadow">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-base font-semibold text-text-primary">Actividad Reciente</h2>
+          <div className="flex gap-3">
+            <Link href="/reservas" className="text-xs text-coral hover:underline">Ver reservas →</Link>
+            <Link href="/presupuestos" className="text-xs text-coral hover:underline">Ver presupuestos →</Link>
+          </div>
         </div>
         <div className="space-y-3">
           {hasGHLData && stats?.recentOpportunities.map((opp) => (

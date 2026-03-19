@@ -247,7 +247,9 @@ export function QuoteDetail({ quote, products, onPreviewEmail, onDeleted }: Quot
           <EnviadoActions
             quote={quote} onResend={handleResend}
             onOpenPaymentModal={() => setShowPaymentModal(true)}
+            onCreateReservation={handleCreateReservation}
             isSending={sendQuote.isPending}
+            isCreating={createFromQuote.isPending}
           />
         )}
         {quote.status === "pagado" && <PagadoActions quote={quote} />}
@@ -376,9 +378,11 @@ function EditableActions({ quote, items, totalAmount, onSaveDraft, onSend, onPre
   );
 }
 
-function EnviadoActions({ quote, onResend, onOpenPaymentModal, isSending }: {
+function EnviadoActions({ quote, onResend, onOpenPaymentModal, onCreateReservation, isSending, isCreating }: {
   quote: Quote; onResend: () => void;
-  onOpenPaymentModal: () => void; isSending: boolean;
+  onOpenPaymentModal: () => void;
+  onCreateReservation: () => void;
+  isSending: boolean; isCreating: boolean;
 }) {
   return (
     <>
@@ -386,6 +390,10 @@ function EnviadoActions({ quote, onResend, onOpenPaymentModal, isSending }: {
         <span className="flex items-center gap-1.5 rounded-full bg-gold-light px-3 py-1 text-xs font-medium text-gold">
           <Clock className="h-3.5 w-3.5" /> Pendiente de pago
         </span>
+        <button onClick={onCreateReservation} disabled={isCreating}
+          className="flex items-center gap-2 rounded-lg border border-sage bg-sage-light px-3 py-1.5 text-xs font-medium text-sage hover:bg-sage-light/80 transition-colors disabled:opacity-50">
+          <CalendarCheck className="h-3.5 w-3.5" /> {isCreating ? "Creando..." : "Crear Reserva"}
+        </button>
       </div>
       <div className="flex items-center gap-3">
         <a href={`/api/quotes/${quote.id}/pdf`} target="_blank" rel="noopener noreferrer"
@@ -394,7 +402,7 @@ function EnviadoActions({ quote, onResend, onOpenPaymentModal, isSending }: {
         </a>
         <button onClick={onResend} disabled={isSending}
           className="flex items-center gap-2 rounded-lg border border-coral px-4 py-2.5 text-sm font-medium text-coral hover:bg-coral-light transition-colors disabled:opacity-50">
-          <RefreshCw className="h-4 w-4" /> Reenviar Email
+          <RefreshCw className="h-4 w-4" /> {isSending ? "Enviando..." : "Reenviar Email"}
         </button>
         <button onClick={onOpenPaymentModal}
           className="flex items-center gap-2 rounded-lg bg-sage px-4 py-2.5 text-sm font-medium text-white hover:bg-sage/90 transition-colors">
