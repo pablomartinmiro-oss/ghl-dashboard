@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { logger } from "@/lib/logger";
 import { sendEmail } from "@/lib/email/client";
 import { createSurveyOpportunity } from "@/lib/quotes/opportunity";
+import { createNotification } from "@/lib/notifications";
 
 const log = logger.child({ module: "survey-submit" });
 
@@ -212,6 +213,16 @@ export async function POST(
   }
 
   log.info({ tenantId: tenant.id, quoteId: quote.id, destination, season, totalAmount }, "Quote created from public survey");
+
+  // Notify owners/managers of new survey lead (non-blocking)
+  const destLabel = destination.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+  createNotification(
+    tenant.id,
+    "new_lead",
+    `Nuevo lead — ${name}`,
+    `${destLabel} · ${adults} adulto${adults !== 1 ? "s" : ""}${children > 0 ? ` + ${children} niño${children !== 1 ? "s" : ""}` : ""} · ${totalAmount.toLocaleString("es-ES", { style: "currency", currency: "EUR" })}`,
+    { quoteId: quote.id }
+  ).catch(() => null);
 
   if (email) {
     sendEmail({

@@ -12,6 +12,7 @@ interface ReservationListProps {
   loading: boolean;
   selectedId: string | null;
   onSelect: (id: string) => void;
+  emptyLabel?: string;
 }
 
 const DATE_FILTERS = [
@@ -65,7 +66,7 @@ function escapeCsv(val: string): string {
   return val;
 }
 
-export function ReservationList({ reservations, loading, selectedId, onSelect }: ReservationListProps) {
+export function ReservationList({ reservations, loading, selectedId, onSelect, emptyLabel }: ReservationListProps) {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("todas");
   const [dateFilter, setDateFilter] = useState("hoy");
@@ -243,7 +244,7 @@ export function ReservationList({ reservations, loading, selectedId, onSelect }:
       <div className="flex-1 overflow-y-auto">
         {filtered.length === 0 ? (
           <div className="flex h-32 items-center justify-center text-sm text-text-secondary">
-            No se encontraron reservas
+            {emptyLabel ?? "No se encontraron reservas"}
           </div>
         ) : (
           <div className="space-y-1 p-2">

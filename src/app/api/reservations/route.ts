@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth/config";
 import { prisma } from "@/lib/db";
 import { logger } from "@/lib/logger";
+import { createNotification } from "@/lib/notifications";
 
 export async function GET(request: NextRequest) {
   const session = await auth();
@@ -122,6 +123,16 @@ export async function POST(request: NextRequest) {
     }
 
     log.info({ reservationId: reservation.id, status: reservationStatus }, "Reservation created");
+
+    // Notify owners/managers of new reservation (non-blocking)
+    createNotification(
+      tenantId,
+      "reservation_created",
+      `Nueva reserva — ${clientName as string}`,
+      `${station as string} · ${new Date(activityDate as string).toLocaleDateString("es-ES", { day: "numeric", month: "short" })}`,
+      { reservationId: reservation.id }
+    ).catch(() => null);
+
     return NextResponse.json({ reservation }, { status: 201 });
   } catch (error) {
     log.error({ error }, "Failed to create reservation");

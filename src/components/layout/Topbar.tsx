@@ -1,10 +1,9 @@
 "use client";
 
 import { useSession, signOut } from "next-auth/react";
-import { Search, Bell, LogOut, User } from "lucide-react";
+import { Search, LogOut, User } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,13 +11,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { NotificationBell } from "./NotificationBell";
 
-interface TopbarProps {
-  unreadCount?: number;
-  onNotificationClick?: () => void;
-}
-
-export function Topbar({ unreadCount = 0, onNotificationClick }: TopbarProps) {
+export function Topbar() {
   const { data: session } = useSession();
   const user = session?.user;
 
@@ -44,21 +39,7 @@ export function Topbar({ unreadCount = 0, onNotificationClick }: TopbarProps) {
 
       <div className="ml-auto flex items-center gap-3">
         {/* Notification Bell */}
-        <button
-          onClick={onNotificationClick}
-          className="relative rounded-lg p-2 text-text-secondary hover:bg-muted hover:text-text-primary"
-          aria-label="Notifications"
-        >
-          <Bell className="h-5 w-5" />
-          {unreadCount > 0 && (
-            <Badge
-              variant="destructive"
-              className="absolute -right-0.5 -top-0.5 h-4 min-w-4 justify-center rounded-full px-1 text-[10px]"
-            >
-              {unreadCount > 99 ? "99+" : unreadCount}
-            </Badge>
-          )}
-        </button>
+        <NotificationBell />
 
         {/* User Menu */}
         <DropdownMenu>
