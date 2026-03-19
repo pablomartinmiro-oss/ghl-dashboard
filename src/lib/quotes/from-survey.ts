@@ -62,6 +62,8 @@ const DESTINATION_MAP: Record<string, string> = {
   grandvalira: "grandvalira",
   "candanchú": "candanchu",
   candanchu: "candanchu",
+  astún: "candanchu",
+  astun: "candanchu",
   "sierra de madrid": "sierra_de_madrid",
   sierra_de_madrid: "sierra_de_madrid",
   snowzone: "sierra_de_madrid",
