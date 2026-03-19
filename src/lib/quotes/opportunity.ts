@@ -9,17 +9,29 @@ import { getGHLClient } from "@/lib/ghl/api";
 
 const log = logger.child({ module: "survey:opportunity" });
 
-// Map normalised destination slug → GHL pipeline name
+// Map normalised destination slug → GHL pipeline name (case-insensitive search)
 const PIPELINE_MAP: Record<string, string> = {
-  baqueira: "BAQUEIRA BERET + ANDORRA",
-  grandvalira: "BAQUEIRA BERET + ANDORRA",
+  baqueira: "BAQUEIRA BERET",
+  grandvalira: "BAQUEIRA BERET",
   sierra_nevada: "SIERRA NEVADA",
   alto_campoo: "ALTO CAMPOO",
   formigal: "FORMIGAL",
-  candanchu: "CANDANCHÚ",
-  la_pinilla: "SIERRA DE MADRID + PINILLA + SNOWZONE",
-  sierra_de_madrid: "SIERRA DE MADRID + PINILLA + SNOWZONE",
+  candanchu: "CANDANCHU",
+  la_pinilla: "PINILLA",
+  sierra_de_madrid: "MADRID",
 };
+
+// Entry stage keywords by priority — whichever matches first wins
+const ENTRY_STAGE_KEYWORDS = ["FORMULARIO", "LEAD", "NUEVO", "ENTRADA"];
+
+function findEntryStage(stages: Array<{ id: string; name: string; position: number }>): { id: string; name: string; position: number } | undefined {
+  for (const keyword of ENTRY_STAGE_KEYWORDS) {
+    const match = stages.find((s) => s.name.toUpperCase().includes(keyword));
+    if (match) return match;
+  }
+  // Fall back to lowest position (first stage)
+  return stages.sort((a, b) => a.position - b.position)[0];
+}
 
 export interface OpportunityResult {
   opportunityId: string;
@@ -40,9 +52,9 @@ export async function createSurveyOpportunity(
   try {
     const ghl = await getGHLClient(tenantId);
 
-    // Find pipeline in cache — exact name, case-insensitive
+    // Find pipeline by partial name match (handles accent encoding differences in GHL)
     const cached = await prisma.cachedPipeline.findFirst({
-      where: { tenantId, name: { equals: pipelineName, mode: "insensitive" } },
+      where: { tenantId, name: { contains: pipelineName, mode: "insensitive" } },
     });
 
     if (!cached) {
@@ -51,10 +63,10 @@ export async function createSurveyOpportunity(
     }
 
     const stages = cached.stages as Array<{ id: string; name: string; position: number }>;
-    // Find "LEAD NO CONTESTADO" or fall back to first stage
-    const stage =
-      stages.find((s) => s.name.toUpperCase().includes("LEAD")) ?? stages[0];
+    const stage = findEntryStage(stages);
     if (!stage) return null;
+
+    log.info({ tenantId, pipelineName: cached.name, stageName: stage.name }, "Pipeline + stage resolved for opportunity");
 
     const opp = await ghl.createOpportunity({
       pipelineId: cached.id,
