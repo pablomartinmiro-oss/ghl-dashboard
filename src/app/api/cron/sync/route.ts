@@ -12,7 +12,16 @@ const log = logger.child({ route: "/api/cron/sync" });
  * - Runs incremental sync for all live tenants
  * - Triggers full sync if cache is stale (>10% mismatch)
  */
-export async function GET() {
+export async function GET(req: Request) {
+  // Verify cron secret if configured
+  const secret = process.env.CRON_SECRET;
+  if (secret) {
+    const auth = req.headers.get("authorization");
+    if (auth !== `Bearer ${secret}`) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+  }
+
   try {
     // 1. Process sync queue (failed writes)
     await processSyncQueue();

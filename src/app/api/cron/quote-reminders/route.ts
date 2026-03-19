@@ -12,7 +12,15 @@ const IBAN = "ES58 0182 2900 5402 0182 7221";
  * 1. Send reminders for quotes expiring within 2 days
  * 2. Expire quotes past their expiration date
  */
-export async function GET() {
+export async function GET(req: Request) {
+  const secret = process.env.CRON_SECRET;
+  if (secret) {
+    const auth = req.headers.get("authorization");
+    if (auth !== `Bearer ${secret}`) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+  }
+
   try {
     const now = new Date();
     const twoDaysFromNow = new Date(
