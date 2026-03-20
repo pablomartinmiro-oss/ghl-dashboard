@@ -9,6 +9,7 @@ import { logger } from "@/lib/logger";
 import { sendEmail } from "@/lib/email/client";
 import { createSurveyOpportunity } from "./opportunity";
 import { getCustomFieldIdToKeyMap } from "@/lib/ghl/custom-fields";
+import { normalizeDestination } from "@/lib/destinations";
 
 interface QuoteItemInput {
   productId: string | null;
@@ -46,33 +47,7 @@ const SURVEY_KEYS = {
   accommodationName: "nombre_del_alojamiento",
 } as const;
 
-// ==================== DESTINATION NORMALISATION ====================
-
-const DESTINATION_MAP: Record<string, string> = {
-  "baqueira beret": "baqueira",
-  baqueira: "baqueira",
-  "sierra nevada": "sierra_nevada",
-  sierra_nevada: "sierra_nevada",
-  "la pinilla": "la_pinilla",
-  la_pinilla: "la_pinilla",
-  formigal: "formigal",
-  cerler: "formigal",           // Cerler → Formigal pipeline
-  "alto campoo": "alto_campoo",
-  alto_campoo: "alto_campoo",
-  grandvalira: "grandvalira",
-  "candanchú": "candanchu",
-  candanchu: "candanchu",
-  astún: "candanchu",
-  astun: "candanchu",
-  "sierra de madrid": "sierra_de_madrid",
-  sierra_de_madrid: "sierra_de_madrid",
-  valdesqui: "sierra_de_madrid",
-  snowzone: "sierra_de_madrid",
-};
-
-function normaliseDestination(raw: string): string {
-  return DESTINATION_MAP[raw.toLowerCase().trim()] ?? raw.toLowerCase().trim();
-}
+// Destination normalisation is handled by the shared normalizeDestination() from lib/destinations.ts
 
 // ==================== CUSTOM FIELD EXTRACTION ====================
 
@@ -244,7 +219,7 @@ export async function maybeCreateQuoteFromSurvey(tenantId: string, contactData: 
   const accommodationType = fields[SURVEY_KEYS.accommodationType] || null;
   const accommodationName = fields[SURVEY_KEYS.accommodationName] || null;
 
-  const destination = normaliseDestination(rawDestino);
+  const { slug: destination, stations } = normalizeDestination(rawDestino);
   const services = parseServices(rawServices);
   const season = detectSeason(rawCheckIn);
 
@@ -278,9 +253,9 @@ export async function maybeCreateQuoteFromSurvey(tenantId: string, contactData: 
     return;
   }
 
-  // Fetch global products for this destination
+  // Fetch global products across all station slugs in this destination cluster
   const products = await prisma.product.findMany({
-    where: { tenantId: null, isActive: true, station: { in: [destination, "all"] } },
+    where: { tenantId: null, isActive: true, station: { in: [...stations, "all"] } },
   });
 
   const days = getDays(rawCheckIn, rawCheckOut);

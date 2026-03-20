@@ -4,6 +4,7 @@ import { logger } from "@/lib/logger";
 import { sendEmail } from "@/lib/email/client";
 import { createSurveyOpportunity } from "@/lib/quotes/opportunity";
 import { createNotification } from "@/lib/notifications";
+import { normalizeDestination } from "@/lib/destinations";
 
 const log = logger.child({ module: "survey-submit" });
 
@@ -84,13 +85,17 @@ export async function POST(
     return NextResponse.json({ error: "Body inválido" }, { status: 400 });
   }
 
-  const { name, email, phone, destination, checkIn, checkOut, services } = body;
+  const { name, email, phone, destination: rawDestination, checkIn, checkOut, services } = body;
   const adults = Math.max(1, Number(body.adults) || 1);
   const children = Math.max(0, Number(body.children) || 0);
 
-  if (!name || !destination || !checkIn || !checkOut) {
+  if (!name || !rawDestination || !checkIn || !checkOut) {
     return NextResponse.json({ error: "Faltan campos obligatorios" }, { status: 400 });
   }
+
+  // Fuzzy-match destination → canonical slug + station slugs for product lookup
+  const { slug: destination, stations } = normalizeDestination(rawDestination);
+  log.info({ rawDestination, destination, stations }, "Destination normalized");
 
   const season = detectSeason(checkIn);
   const days = getDays(checkIn, checkOut);
@@ -118,9 +123,9 @@ export async function POST(
     return NextResponse.json({ quoteId: existing.id, duplicate: true });
   }
 
-  // Fetch products for this station
+  // Fetch products across all station slugs in this destination cluster
   const products = await prisma.product.findMany({
-    where: { tenantId: null, isActive: true, station: { in: [destination, "all"] } },
+    where: { tenantId: null, isActive: true, station: { in: [...stations, "all"] } },
   });
 
   interface QuoteItemInput {
