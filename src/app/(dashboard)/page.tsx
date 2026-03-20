@@ -336,26 +336,13 @@ export default function DashboardHome() {
           </div>
         </div>
 
-        {/* Presupuestos KPIs */}
+        {/* Conversion Funnel */}
         <div className="rounded-2xl bg-white p-5 shadow-[0_1px_3px_rgba(0,0,0,0.04)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.06)] transition-shadow">
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-base font-semibold text-text-primary">Presupuestos</h2>
-            <span className="text-xs text-text-secondary">{allQuotes.length} total</span>
+            <h2 className="text-base font-semibold text-text-primary">Embudo de Conversión</h2>
+            <span className="text-xs text-text-secondary">{allQuotes.length} presupuestos</span>
           </div>
-          <div className="grid grid-cols-3 gap-4 py-4">
-            <div className="text-center">
-              <p className="text-2xl font-bold text-text-primary">{sent.length}</p>
-              <p className="text-xs text-text-secondary">Enviados</p>
-            </div>
-            <div className="text-center">
-              <p className="text-2xl font-bold text-sage">{accepted.length}</p>
-              <p className="text-xs text-text-secondary">Aceptados</p>
-            </div>
-            <div className="text-center">
-              <p className="text-2xl font-bold text-coral">{conversionRate}%</p>
-              <p className="text-xs text-text-secondary">Conversión</p>
-            </div>
-          </div>
+          <FunnelChart quotes={allQuotes} totalReservations={resStats?.weekly.totalReservations ?? 0} />
         </div>
       </div>
 
@@ -447,6 +434,64 @@ export default function DashboardHome() {
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+// ── Conversion Funnel ────────────────────────────────────────────────
+
+interface FunnelQuote {
+  status: string;
+  source: string | null;
+  totalAmount: number;
+}
+
+function FunnelChart({ quotes, totalReservations }: { quotes: FunnelQuote[]; totalReservations: number }) {
+  const leads = quotes.filter((q) => q.source === "survey").length;
+  const total = quotes.length;
+  const sent = quotes.filter((q) => ["enviado", "pagado", "aceptado"].includes(q.status)).length;
+  const paid = quotes.filter((q) => q.status === "pagado" || q.status === "aceptado").length;
+
+  const stages = [
+    { label: "Leads", count: leads || total, color: "#E87B5A" },
+    { label: "Presupuestos", count: total, color: "#D4A853" },
+    { label: "Enviados", count: sent, color: "#5B8C6D" },
+    { label: "Pagados", count: paid, color: "#5B8C6D" },
+    { label: "Reservas", count: totalReservations, color: "#E87B5A" },
+  ];
+
+  const maxCount = Math.max(1, ...stages.map((s) => s.count));
+
+  return (
+    <div className="space-y-2.5">
+      {stages.map((stage, i) => {
+        const pct = Math.max((stage.count / maxCount) * 100, 8);
+        const prevCount = i > 0 ? stages[i - 1].count : 0;
+        const dropRate = prevCount > 0 ? Math.round(((prevCount - stage.count) / prevCount) * 100) : 0;
+
+        return (
+          <div key={stage.label}>
+            {i > 0 && dropRate > 0 && (
+              <div className="mb-1 ml-2 text-[10px] text-[#8A8580]">
+                ↓ -{dropRate}%
+              </div>
+            )}
+            <div className="flex items-center gap-3">
+              <span className="w-24 shrink-0 text-right text-xs font-medium text-[#2D2A26]">
+                {stage.label}
+              </span>
+              <div className="flex-1">
+                <div
+                  className="flex h-7 items-center rounded-lg px-3 text-xs font-semibold text-white transition-all"
+                  style={{ width: `${pct}%`, backgroundColor: stage.color }}
+                >
+                  {stage.count}
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }

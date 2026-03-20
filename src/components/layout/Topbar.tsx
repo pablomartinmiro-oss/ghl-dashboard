@@ -1,8 +1,7 @@
 "use client";
 
 import { useSession, signOut } from "next-auth/react";
-import { Search, LogOut, User } from "lucide-react";
-import { Input } from "@/components/ui/input";
+import { LogOut, User } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -12,6 +11,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { NotificationBell } from "./NotificationBell";
+import { GlobalSearch } from "./GlobalSearch";
 
 export function Topbar() {
   const { data: session } = useSession();
@@ -28,14 +28,8 @@ export function Topbar() {
 
   return (
     <header className="flex h-14 items-center gap-4 border-b border-border bg-white px-6">
-      {/* Search */}
-      <div className="relative max-w-md flex-1">
-        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-secondary" />
-        <Input
-          placeholder="Search contacts, conversations..."
-          className="h-9 rounded-[10px] border-warm-border bg-surface pl-9 text-sm placeholder:text-text-secondary focus:border-coral"
-        />
-      </div>
+      {/* Global Search */}
+      <GlobalSearch />
 
       <div className="ml-auto flex items-center gap-3">
         {/* Notification Bell */}

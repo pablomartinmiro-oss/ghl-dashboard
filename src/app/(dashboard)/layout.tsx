@@ -10,6 +10,7 @@ import { MobileNav } from "@/components/layout/MobileNav";
 import { ErrorBoundary } from "@/components/shared/ErrorBoundary";
 import { GHLStatusBanner } from "@/components/shared/GHLStatusBanner";
 import { DemoBanner } from "@/components/shared/DemoBanner";
+import { CommandPalette } from "@/components/layout/CommandPalette";
 
 export default function DashboardLayout({
   children,
@@ -56,6 +57,7 @@ export default function DashboardLayout({
             </main>
           </div>
         </div>
+        <CommandPalette />
         <Toaster />
       </QueryClientProvider>
     </SessionProvider>
