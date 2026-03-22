@@ -1,12 +1,12 @@
 # GHL Dashboard — Build Progress
 
 ## Current Status
-- **Phase:** PHASE V complete — Product System Upgrade (per-product variables, tasks, cancellation, BDR emails)
+- **Phase:** PHASE W complete — Automated Quote Follow-Up System
 - **Step:** Ready for push
 - **Live URL:** https://crm-dash-prod.up.railway.app
 - **Last pushed commit:** cb6fa70 (2026-03-18)
-- **Last deployed commit:** fc2e8d0 (2026-03-16) — phases R-V pushed to git, Railway auto-deploys
-- **Date:** 2026-03-20
+- **Last deployed commit:** fc2e8d0 (2026-03-16) — phases R-W pushed to git, Railway auto-deploys
+- **Date:** 2026-03-22
 
 ## What the App Does Today
 
@@ -200,7 +200,26 @@ A fully functional multi-tenant CRM dashboard for Skicenter ski travel agencies,
 - **Product audit**: GET `/api/admin/product-audit` — finds duplicates, zero-price, test products
 - **Migration**: `20260320000000_product_system_upgrade`
 
-### Next: Phase W — TBD
+### Phase W: Automated Quote Follow-Up System (2026-03-22) ✅
+- **Full reminder sequence**: 5-step automated follow-up for unpaid quotes
+  - +24h: first reminder ("tu viaje sigue esperando")
+  - +48h: second reminder ("las disponibilidades podrían variar")
+  - +72h: discount offer (code PTSK2526, 5% off)
+  - 2 days before expiry: urgency warning
+  - Past expiry: auto-expire + notification email
+- **Post-payment follow-up**: cross-sell (+24h after payment, only missing services) + review request (+5h after checkout via TripAdvisor)
+- **Pre-trip reminders**: 48h, 24h, and day-of-arrival messages for paid quotes
+- **Multi-channel delivery**: Email (Resend) + SMS/WhatsApp (GHL API) for every message
+- **Internal notifications**: Team notified on quote expiry + at-risk flagging (5+ days unpaid)
+- **Schema fields**: `lastReminderStep`, `crossSellSentAt`, `reviewSentAt`, `preTripStep` on Quote
+- **Migration**: `20260322000000_quote_followup_tracking`
+- **Files**:
+  - `src/lib/email/followup-templates.ts` — 10 email templates + 9 SMS message builders
+  - `src/lib/quotes/follow-up.ts` — Follow-up engine (4 processors: unpaid, post-payment, pre-trip, at-risk)
+  - `src/app/api/cron/quote-reminders/route.ts` — Cron endpoint orchestrating all flows
+- **Cron setup**: `GET /api/cron/quote-reminders` — run daily at 09:00 Europe/Madrid
+
+### Next: Phase X — TBD
 
 ## DB Migrations
 1. `init` — Core models (Tenant, User, Role, Reservation, etc.)
@@ -209,6 +228,7 @@ A fully functional multi-tenant CRM dashboard for Skicenter ski travel agencies,
 4. `20260316300000_pricing_engine` — Product refactor (destination→station, new fields), SeasonCalendar table
 5. `20260317000000_demo_onboarding_sync` — isDemo, onboarding steps (1-3 + dismissed), sync progress fields on Tenant
 6. `20260320000000_product_system_upgrade` — QuoteItem per-product fields, Task model, Quote cancellation fields
+7. `20260322000000_quote_followup_tracking` — Quote follow-up tracking fields (lastReminderStep, crossSellSentAt, reviewSentAt, preTripStep)
 
 ## Known Issues
 - No Postgres running locally — need `docker-compose up db redis` before migrations
@@ -225,6 +245,7 @@ A fully functional multi-tenant CRM dashboard for Skicenter ski travel agencies,
 - **Seed catalog on live** — click "Sembrar Catálogo" in Settings after deploy
 - **Connect real GHL sub-account** via OAuth flow and test end-to-end live sync
 - **Set up Railway cron** for `/api/cron/sync` (every 5 minutes)
+- **Set up Railway cron** for `/api/cron/quote-reminders` (daily at 09:00 Europe/Madrid) — optional: set CRON_SECRET env var + pass as `Authorization: Bearer {secret}`
 - **Test webhook delivery** — register webhook URL in GHL marketplace app settings
 - **Email/WhatsApp delivery** — integrate Resend (email) + Twilio (WhatsApp) for real notifications
 
