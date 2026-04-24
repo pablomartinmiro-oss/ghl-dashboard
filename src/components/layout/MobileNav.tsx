@@ -15,6 +15,7 @@ import {
   CalendarCheck,
   Wallet,
   CalendarRange,
+  ShieldCheck,
 } from "lucide-react";
 import {
   Sheet,
@@ -43,6 +44,7 @@ const NAV_ITEMS: MobileNavItem[] = [
   { label: "Pipeline", href: "/pipeline", icon: Kanban, permission: "pipelines:view" },
   { label: "Contabilidad", href: "/contabilidad", icon: Wallet, permission: null },
   { label: "Operaciones", href: "/operaciones", icon: CalendarRange, permission: null },
+  { label: "REAV", href: "/reav", icon: ShieldCheck, permission: null },
   { label: "Ajustes", href: "/settings", icon: Settings, permission: "settings:team" },
 ];
 
