@@ -18,6 +18,7 @@ import {
   Wallet,
   CalendarRange,
   ShieldCheck,
+  Megaphone,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -103,6 +104,13 @@ const NAV_ITEMS: NavItem[] = [
     label: "REAV",
     href: "/reav",
     icon: ShieldCheck,
+    permission: null,
+    roles: ["Owner / Manager"],
+  },
+  {
+    label: "Marketing",
+    href: "/marketing",
+    icon: Megaphone,
     permission: null,
     roles: ["Owner / Manager"],
   },

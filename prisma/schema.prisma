@@ -75,6 +75,9 @@ model Tenant {
   reavRegistry       REAVRegistry?
   safetyDocuments    SafetyDocument[]
   incidentReports    IncidentReport[]
+  campaigns          Campaign[]
+  emailTemplates     EmailTemplate[]
+  promotions         Promotion[]
 }
 
 // ==================== DESTINATIONS ====================
@@ -867,4 +870,89 @@ model IncidentReport {
 
   @@index([tenantId])
   @@index([tenantId, date])
+}
+
+// ==================== MARKETING ====================
+model Campaign {
+  id             String   @id @default(cuid())
+  tenantId       String
+  tenant         Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name           String
+  type           String   // "email" | "sms" | "whatsapp" | "push"
+  status         String   @default("draft") // draft, scheduled, active, paused, completed, cancelled
+  subject        String?
+  content        String?
+  templateId     String?
+  audienceFilter Json?
+  scheduledAt    DateTime?
+  startedAt      DateTime?
+  completedAt    DateTime?
+  stats          Json?
+  createdBy      String?
+  metadata       Json?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  sends          CampaignSend[]
+
+  @@index([tenantId])
+  @@index([tenantId, status])
+}
+
+model CampaignSend {
+  id           String   @id @default(cuid())
+  campaignId   String
+  campaign     Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  contactEmail String
+  contactName  String?
+  status       String   @default("pending")
+  sentAt       DateTime?
+  openedAt     DateTime?
+  clickedAt    DateTime?
+  error        String?
+  metadata     Json?
+  createdAt    DateTime @default(now())
+
+  @@index([campaignId])
+  @@index([campaignId, status])
+}
+
+model EmailTemplate {
+  id        String   @id @default(cuid())
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name      String
+  subject   String
+  body      String
+  category  String?
+  variables Json?
+  isDefault Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tenantId])
+}
+
+model Promotion {
+  id            String   @id @default(cuid())
+  tenantId      String
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name          String
+  code          String
+  type          String   // "percentage" | "fixed" | "2x1" | "free_extra"
+  value         Int?
+  description   String?
+  validFrom     DateTime
+  validUntil    DateTime
+  maxUses       Int?
+  currentUses   Int      @default(0)
+  minOrderCents Int?
+  applicableTo  Json?
+  status        String   @default("active") // active, expired, disabled
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([tenantId, code])
+  @@index([tenantId])
+  @@index([tenantId, status])
 }
