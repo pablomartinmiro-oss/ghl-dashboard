@@ -13,6 +13,9 @@ export async function POST() {
   if (!session?.user?.tenantId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  if (session.user.roleName !== "Owner") {
+    return NextResponse.json({ error: "Forbidden — Owner role required" }, { status: 403 });
+  }
 
   const tenantId = session.user.tenantId;
   const log = logger.child({ route: "clean-tenant", tenantId });

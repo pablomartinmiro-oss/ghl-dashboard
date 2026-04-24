@@ -13,11 +13,12 @@ interface ImportProduct {
 
 export async function POST(req: NextRequest) {
   const session = await auth();
-  if (!session?.user) {
+  if (!session?.user?.tenantId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const log = logger.child({ path: "/api/products/bulk-import" });
+  const { tenantId } = session.user;
+  const log = logger.child({ tenantId, path: "/api/products/bulk-import" });
 
   try {
     const body = await req.json();
@@ -37,8 +38,9 @@ export async function POST(req: NextRequest) {
     for (const p of products) {
       if (!p.name || typeof p.price !== "number") continue;
 
+      // Match by (tenantId, name) so we never clobber another tenant's or the global catalog
       const existing = await prisma.product.findFirst({
-        where: { name: p.name },
+        where: { name: p.name, tenantId },
       });
 
       if (existing) {
@@ -55,6 +57,7 @@ export async function POST(req: NextRequest) {
       } else {
         await prisma.product.create({
           data: {
+            tenantId,
             name: p.name,
             category: p.category || "alquiler",
             station: p.station || "all",

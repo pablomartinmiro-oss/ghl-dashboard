@@ -46,7 +46,6 @@ export async function GET() {
       locationId: tenant?.ghlLocationId,
       hasAccessToken: !!tenant?.ghlAccessToken,
       accessTokenLength: tenant?.ghlAccessToken?.length ?? 0,
-      accessTokenPrefix: tenant?.ghlAccessToken?.substring(0, 20) ?? "null",
       hasRefreshToken: !!tenant?.ghlRefreshToken,
       tokenExpiry: tenant?.ghlTokenExpiry?.toISOString() ?? "null",
       tokenExpired: tenant?.ghlTokenExpiry ? new Date() > tenant.ghlTokenExpiry : "no expiry set",
@@ -69,7 +68,6 @@ export async function GET() {
       diagnostics.step2_decrypt = {
         success: true,
         decryptedLength: accessToken.length,
-        decryptedPrefix: accessToken.substring(0, 10) + "...",
         looksLikeJWT: accessToken.includes("."),
       };
     } catch (decryptError) {

@@ -5,17 +5,21 @@ import { logger } from "@/lib/logger";
 
 export async function GET(request: NextRequest) {
   const session = await auth();
-  if (!session?.user) {
+  if (!session?.user?.tenantId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const log = logger.child({ path: "/api/products" });
+  const { tenantId } = session.user;
+  const log = logger.child({ tenantId, path: "/api/products" });
   const { searchParams } = request.nextUrl;
   const category = searchParams.get("category");
   const station = searchParams.get("station");
 
   try {
-    const where: Record<string, unknown> = {};
+    const where: Record<string, unknown> = {
+      // Show global catalog (tenantId: null) plus this tenant's overrides
+      OR: [{ tenantId: null }, { tenantId }],
+    };
     if (category) where.category = category;
     if (station) where.station = station;
 
@@ -37,16 +41,18 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   const session = await auth();
-  if (!session?.user) {
+  if (!session?.user?.tenantId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const log = logger.child({ path: "/api/products" });
+  const { tenantId } = session.user;
+  const log = logger.child({ tenantId, path: "/api/products" });
 
   try {
     const body = await request.json();
     const product = await prisma.product.create({
       data: {
+        tenantId,
         category: body.category,
         name: body.name,
         station: body.station || "all",

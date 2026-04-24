@@ -9,9 +9,12 @@ export async function POST() {
   if (!session?.user?.tenantId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  if (session.user.roleName !== "Owner") {
+    return NextResponse.json({ error: "Forbidden — Owner role required" }, { status: 403 });
+  }
 
   const { tenantId } = session.user;
-  const log = logger.child({ route: "seed-products" });
+  const log = logger.child({ route: "seed-products", tenantId });
 
   try {
     // 1. Delete all global products (tenantId = null) and this tenant's season calendar

@@ -8,16 +8,17 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await auth();
-  if (!session?.user) {
+  if (!session?.user?.tenantId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const { tenantId } = session.user;
   const { id } = await params;
-  const log = logger.child({ path: `/api/products/${id}` });
+  const log = logger.child({ tenantId, path: `/api/products/${id}` });
 
   try {
     const existing = await prisma.product.findFirst({
-      where: { id },
+      where: { id, tenantId },
     });
     if (!existing) {
       return NextResponse.json({ error: "Product not found" }, { status: 404 });
@@ -58,16 +59,17 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await auth();
-  if (!session?.user) {
+  if (!session?.user?.tenantId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const { tenantId } = session.user;
   const { id } = await params;
-  const log = logger.child({ path: `/api/products/${id}` });
+  const log = logger.child({ tenantId, path: `/api/products/${id}` });
 
   try {
     const existing = await prisma.product.findFirst({
-      where: { id },
+      where: { id, tenantId },
     });
     if (!existing) {
       return NextResponse.json({ error: "Product not found" }, { status: 404 });
