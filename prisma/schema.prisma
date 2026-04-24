@@ -78,6 +78,8 @@ model Tenant {
   campaigns          Campaign[]
   emailTemplates     EmailTemplate[]
   promotions         Promotion[]
+  storefrontConfig   StorefrontConfig?
+  bookingRequests    BookingRequest[]
 }
 
 // ==================== DESTINATIONS ====================
@@ -953,6 +955,53 @@ model Promotion {
   updatedAt     DateTime @updatedAt
 
   @@unique([tenantId, code])
+  @@index([tenantId])
+  @@index([tenantId, status])
+}
+
+// ==================== STOREFRONT ====================
+model StorefrontConfig {
+  id             String   @id @default(cuid())
+  tenantId       String   @unique
+  tenant         Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  enabled        Boolean  @default(false)
+  slug           String   @unique
+  heroTitle      String?
+  heroSubtitle   String?
+  heroImageUrl   String?
+  aboutText      String?
+  contactEmail   String?
+  contactPhone   String?
+  socialLinks    Json?
+  seoTitle       String?
+  seoDescription String?
+  customCss      String?
+  showPrices     Boolean  @default(true)
+  allowBookings  Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model BookingRequest {
+  id            String    @id @default(cuid())
+  tenantId      String
+  tenant        Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  customerName  String
+  customerEmail String
+  customerPhone String?
+  productIds    Json
+  destinationId String?
+  startDate     DateTime
+  endDate       DateTime?
+  guests        Int       @default(1)
+  notes         String?
+  promoCode     String?
+  status        String    @default("pending") // pending, contacted, quoted, confirmed, cancelled
+  totalCents    Int?
+  metadata      Json?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
   @@index([tenantId])
   @@index([tenantId, status])
 }

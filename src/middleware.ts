@@ -23,6 +23,8 @@ const PUBLIC_ROUTES = [
   "/api/survey",
   "/portal",
   "/api/suppliers/portal",
+  "/tienda",
+  "/api/storefront",
 ];
 
 export async function middleware(req: NextRequest) {

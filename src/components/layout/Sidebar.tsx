@@ -19,6 +19,7 @@ import {
   CalendarRange,
   ShieldCheck,
   Megaphone,
+  Store,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -111,6 +112,13 @@ const NAV_ITEMS: NavItem[] = [
     label: "Marketing",
     href: "/marketing",
     icon: Megaphone,
+    permission: null,
+    roles: ["Owner / Manager"],
+  },
+  {
+    label: "Tienda",
+    href: "/tienda",
+    icon: Store,
     permission: null,
     roles: ["Owner / Manager"],
   },
