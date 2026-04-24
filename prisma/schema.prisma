@@ -71,6 +71,7 @@ model Tenant {
   branding           TenantBranding?
   transactions       Transaction[]
   supplierSettlements SupplierSettlement[]
+  opsEvents          OpsEvent[]
 }
 
 // ==================== DESTINATIONS ====================
@@ -91,6 +92,7 @@ model Destination {
   updatedAt   DateTime @updatedAt
 
   products    Product[]
+  opsEvents   OpsEvent[]
 
   @@unique([tenantId, slug])
   @@index([tenantId])
@@ -119,6 +121,7 @@ model Supplier {
   products    Product[]
   transactions Transaction[]
   settlements SupplierSettlement[]
+  opsEvents   OpsEvent[]
 
   @@unique([tenantId, slug])
   @@index([tenantId])
@@ -761,4 +764,34 @@ model ContactSubmission {
   createdAt DateTime @default(now())
 
   @@index([email, createdAt])
+}
+
+// ==================== OPS CALENDAR ====================
+model OpsEvent {
+  id            String   @id @default(cuid())
+  tenantId      String
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  title         String
+  type          String   // "pickup", "dropoff", "transfer", "lesson", "activity", "staff", "maintenance", "other"
+  date          DateTime
+  startTime     String?  // "09:00"
+  endTime       String?  // "11:00"
+  allDay        Boolean  @default(false)
+  destinationId String?
+  destination   Destination? @relation(fields: [destinationId], references: [id], onDelete: SetNull)
+  supplierId    String?
+  supplier      Supplier? @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+  assignedTo    String?
+  status        String   @default("scheduled") // "scheduled" | "in_progress" | "completed" | "cancelled"
+  notes         String?
+  color         String?
+  reservationId String?
+  metadata      Json?
+  createdBy     String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([tenantId, date])
+  @@index([tenantId, destinationId])
+  @@index([tenantId, type])
 }

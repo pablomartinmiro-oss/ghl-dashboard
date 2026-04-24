@@ -14,6 +14,7 @@ import {
   Package,
   CalendarCheck,
   Wallet,
+  CalendarRange,
 } from "lucide-react";
 import {
   Sheet,
@@ -41,6 +42,7 @@ const NAV_ITEMS: MobileNavItem[] = [
   { label: "Contactos", href: "/contacts", icon: Users, permission: "contacts:view" },
   { label: "Pipeline", href: "/pipeline", icon: Kanban, permission: "pipelines:view" },
   { label: "Contabilidad", href: "/contabilidad", icon: Wallet, permission: null },
+  { label: "Operaciones", href: "/operaciones", icon: CalendarRange, permission: null },
   { label: "Ajustes", href: "/settings", icon: Settings, permission: "settings:team" },
 ];
 

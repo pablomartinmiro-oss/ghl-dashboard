@@ -16,6 +16,7 @@ import {
   CalendarCheck,
   Mountain,
   Wallet,
+  CalendarRange,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -87,6 +88,13 @@ const NAV_ITEMS: NavItem[] = [
     label: "Contabilidad",
     href: "/contabilidad",
     icon: Wallet,
+    permission: null,
+    roles: ["Owner / Manager"],
+  },
+  {
+    label: "Operaciones",
+    href: "/operaciones",
+    icon: CalendarRange,
     permission: null,
     roles: ["Owner / Manager"],
   },
