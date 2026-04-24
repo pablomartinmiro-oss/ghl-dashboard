@@ -21,6 +21,8 @@ const PUBLIC_ROUTES = [
   "/api/cron/quote-reminders",
   "/survey",
   "/api/survey",
+  "/portal",
+  "/api/suppliers/portal",
 ];
 
 export async function middleware(req: NextRequest) {

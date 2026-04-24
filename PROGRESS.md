@@ -301,6 +301,22 @@ A fully functional multi-tenant CRM dashboard for Skicenter ski travel agencies,
 - Tables: horizontal scroll wrapper on mobile
 - All interactive elements meet 44px minimum touch target
 
+### Phase 3: Supplier Portal (2026-04-24) ✅
+- **Schema**: Added `portalEnabled` (default false) and `portalPin` (6-digit nullable) to `Supplier`
+- **Migration**: `20260424200000_supplier_portal`
+- **JWT helper** (`src/lib/auth/supplier-token.ts`): `signSupplierToken`, `verifySupplierToken`, `getSupplierSession` (Bearer header) using `jose` (HS256, 24h, iss `skicenter-supplier-portal`, aud `supplier`, signed with `AUTH_SECRET`)
+- **Portal API** (Bearer token auth, tenant-scoped by JWT claim):
+  - `POST /api/suppliers/portal/auth` — supplierId + PIN → JWT
+  - `GET  /api/suppliers/portal/[id]/info` — public, returns `{ name, tenantId }` (only if portalEnabled + active)
+  - `GET  /api/suppliers/portal/[id]/dashboard` — counts/revenue/pending settlements (last 30 days)
+  - `GET  /api/suppliers/portal/[id]/bookings` — paid quote items linked to supplier (last 30 days)
+  - `GET  /api/suppliers/portal/[id]/settlements` — full settlements history
+- **Portal pages** (`/portal/[supplierId]`): login (PIN input + auto-redirect if token), `/dashboard` (3 stat cards + recent bookings table), `/liquidaciones` (full settlement history with status badges)
+- **Shared**: `PortalNav` (top nav bar, coral accents, logout), `usePortalAuth` hook (localStorage token + authed fetch with 401 redirect)
+- **Middleware**: `/portal` and `/api/suppliers/portal` added to `PUBLIC_ROUTES`
+- **Admin UI**: `SupplierPortalControls` (PIN toggle, auto-generate 6-digit PIN, regenerate, copy PIN, copy/open portal link) exposed via KeyRound action in `SuppliersCard` row
+- **Supplier PATCH**: now accepts `portalEnabled` (bool) and `portalPin` (6-digit string or null)
+
 ### Next: Phase Y — TBD
 
 ## DB Migrations
@@ -312,6 +328,9 @@ A fully functional multi-tenant CRM dashboard for Skicenter ski travel agencies,
 6. `20260320000000_product_system_upgrade` — QuoteItem per-product fields, Task model, Quote cancellation fields
 7. `20260322000000_quote_followup_tracking` — Quote follow-up tracking fields (lastReminderStep, crossSellSentAt, reviewSentAt, preTripStep)
 8. `20260322100000_contact_submission` — ContactSubmission model for public contact form (rate limiting index)
+9. `20260424000000_white_label_foundation` — Destination, Supplier, ServiceCategory, TenantBranding + white-label Product relations
+10. `20260424100000_accounting` — Transaction + SupplierSettlement
+11. `20260424200000_supplier_portal` — Supplier.portalEnabled + Supplier.portalPin
 
 ## Known Issues
 - No Postgres running locally — need `docker-compose up db redis` before migrations

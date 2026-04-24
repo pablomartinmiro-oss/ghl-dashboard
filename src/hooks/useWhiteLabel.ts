@@ -30,6 +30,8 @@ interface Supplier {
   address: string | null;
   contactName: string | null;
   notes: string | null;
+  portalEnabled: boolean;
+  portalPin: string | null;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;

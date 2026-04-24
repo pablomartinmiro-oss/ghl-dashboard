@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
-import { Plus, Pencil, Trash2, Truck, X } from "lucide-react";
+import { Fragment, useState } from "react";
+import { Plus, Pencil, Trash2, Truck, X, KeyRound } from "lucide-react";
 import { toast } from "sonner";
+import { SupplierPortalControls } from "./SupplierPortalControls";
 import {
   useSuppliers,
   useCreateSupplier,
@@ -43,6 +44,7 @@ export function SuppliersCard() {
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<Supplier | null>(null);
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
+  const [portalOpenId, setPortalOpenId] = useState<string | null>(null);
 
   const openCreate = () => { setEditing(null); setForm(EMPTY_FORM); setShowForm(true); };
   const openEdit = (s: Supplier) => {
@@ -197,30 +199,50 @@ export function SuppliersCard() {
               </thead>
               <tbody className="divide-y divide-border">
                 {suppliers.map((s) => (
-                  <tr key={s.id} className="hover:bg-surface/30 transition-colors">
-                    <td className="px-4 py-3 text-sm">
-                      <div className="font-medium text-text-primary">{s.name}</div>
-                      <div className="text-xs text-text-secondary font-mono">{s.slug}</div>
-                    </td>
-                    <td className="px-4 py-3 text-sm text-text-secondary">{s.cif ?? "—"}</td>
-                    <td className="px-4 py-3 text-sm text-text-secondary">{s.email ?? "—"}</td>
-                    <td className="px-4 py-3 text-sm text-text-secondary">{s.contactName ?? "—"}</td>
-                    <td className="px-4 py-3 text-center">
-                      <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${s.isActive ? "bg-sage-light text-sage" : "bg-warm-muted text-text-secondary"}`}>
-                        {s.isActive ? "Activo" : "Inactivo"}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <div className="flex items-center justify-end gap-1">
-                        <button onClick={() => openEdit(s)} className="rounded-lg p-1.5 text-text-secondary hover:bg-warm-muted hover:text-coral transition-colors" title="Editar">
-                          <Pencil className="h-4 w-4" />
-                        </button>
-                        <button onClick={() => handleDelete(s)} className="rounded-lg p-1.5 text-text-secondary hover:bg-red-50 hover:text-danger transition-colors" title="Eliminar">
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
+                  <Fragment key={s.id}>
+                    <tr className="hover:bg-surface/30 transition-colors">
+                      <td className="px-4 py-3 text-sm">
+                        <div className="font-medium text-text-primary">{s.name}</div>
+                        <div className="text-xs text-text-secondary font-mono">{s.slug}</div>
+                      </td>
+                      <td className="px-4 py-3 text-sm text-text-secondary">{s.cif ?? "—"}</td>
+                      <td className="px-4 py-3 text-sm text-text-secondary">{s.email ?? "—"}</td>
+                      <td className="px-4 py-3 text-sm text-text-secondary">{s.contactName ?? "—"}</td>
+                      <td className="px-4 py-3 text-center">
+                        <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${s.isActive ? "bg-sage-light text-sage" : "bg-warm-muted text-text-secondary"}`}>
+                          {s.isActive ? "Activo" : "Inactivo"}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          <button
+                            onClick={() => setPortalOpenId(portalOpenId === s.id ? null : s.id)}
+                            className={`rounded-lg p-1.5 transition-colors ${
+                              s.portalEnabled
+                                ? "text-coral hover:bg-coral/10"
+                                : "text-text-secondary hover:bg-warm-muted hover:text-coral"
+                            }`}
+                            title="Portal"
+                          >
+                            <KeyRound className="h-4 w-4" />
+                          </button>
+                          <button onClick={() => openEdit(s)} className="rounded-lg p-1.5 text-text-secondary hover:bg-warm-muted hover:text-coral transition-colors" title="Editar">
+                            <Pencil className="h-4 w-4" />
+                          </button>
+                          <button onClick={() => handleDelete(s)} className="rounded-lg p-1.5 text-text-secondary hover:bg-red-50 hover:text-danger transition-colors" title="Eliminar">
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                    {portalOpenId === s.id && (
+                      <tr className="bg-surface/20">
+                        <td colSpan={6} className="px-4 py-3">
+                          <SupplierPortalControls supplier={s} />
+                        </td>
+                      </tr>
+                    )}
+                  </Fragment>
                 ))}
               </tbody>
             </table>

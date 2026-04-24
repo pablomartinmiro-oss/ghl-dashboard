@@ -15,6 +15,8 @@ const updateSchema = z.object({
   contactName: z.string().max(120).nullable().optional(),
   notes: z.string().max(2000).nullable().optional(),
   isActive: z.boolean().optional(),
+  portalEnabled: z.boolean().optional(),
+  portalPin: z.string().regex(/^\d{6}$/, "PIN debe tener 6 dígitos").nullable().optional(),
 });
 
 export async function GET(
@@ -75,6 +77,8 @@ export async function PATCH(
         ...(data.contactName !== undefined && { contactName: data.contactName || null }),
         ...(data.notes !== undefined && { notes: data.notes || null }),
         ...(data.isActive !== undefined && { isActive: data.isActive }),
+        ...(data.portalEnabled !== undefined && { portalEnabled: data.portalEnabled }),
+        ...(data.portalPin !== undefined && { portalPin: data.portalPin || null }),
       },
     });
 
