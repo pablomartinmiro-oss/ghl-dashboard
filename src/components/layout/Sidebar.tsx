@@ -15,6 +15,7 @@ import {
   Package,
   CalendarCheck,
   Mountain,
+  Wallet,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -80,6 +81,13 @@ const NAV_ITEMS: NavItem[] = [
     href: "/pipeline",
     icon: Kanban,
     permission: "pipelines:view",
+    roles: ["Owner / Manager"],
+  },
+  {
+    label: "Contabilidad",
+    href: "/contabilidad",
+    icon: Wallet,
+    permission: null,
     roles: ["Owner / Manager"],
   },
   {

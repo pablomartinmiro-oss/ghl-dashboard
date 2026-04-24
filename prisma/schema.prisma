@@ -69,6 +69,8 @@ model Tenant {
   suppliers          Supplier[]
   serviceCategories  ServiceCategory[]
   branding           TenantBranding?
+  transactions       Transaction[]
+  supplierSettlements SupplierSettlement[]
 }
 
 // ==================== DESTINATIONS ====================
@@ -113,6 +115,8 @@ model Supplier {
   updatedAt   DateTime @updatedAt
 
   products    Product[]
+  transactions Transaction[]
+  settlements SupplierSettlement[]
 
   @@unique([tenantId, slug])
   @@index([tenantId])
@@ -694,6 +698,56 @@ model SyncStatus {
 }
 
 // ==================== CONTACT FORM SUBMISSIONS ====================
+
+// ==================== ACCOUNTING ====================
+model Transaction {
+  id            String   @id @default(cuid())
+  tenantId      String
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  type          String   // "income", "expense", "supplier_settlement", "refund"
+  category      String   // "reservation", "quote", "groupon", "supplier", "operational", "tax", "other"
+  description   String
+  amountCents   Int
+  currency      String   @default("EUR")
+  date          DateTime @default(now())
+  referenceType String?  // "reservation", "quote", "supplier"
+  referenceId   String?
+  supplierId    String?
+  supplier      Supplier? @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+  paymentMethod String?  // "card", "transfer", "cash", "groupon"
+  status        String   @default("confirmed") // "pending", "confirmed", "cancelled"
+  notes         String?
+  createdBy     String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([tenantId])
+  @@index([tenantId, date])
+  @@index([tenantId, type])
+  @@index([tenantId, supplierId])
+}
+
+model SupplierSettlement {
+  id              String   @id @default(cuid())
+  tenantId        String
+  tenant          Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  supplierId      String
+  supplier        Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  periodStart     DateTime
+  periodEnd       DateTime
+  totalCents      Int
+  commissionPct   Float    @default(0)
+  commissionCents Int      @default(0)
+  netCents        Int
+  status          String   @default("draft") // "draft", "sent", "confirmed", "paid"
+  paidAt          DateTime?
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([tenantId])
+  @@index([tenantId, supplierId])
+}
 
 model ContactSubmission {
   id        String   @id @default(cuid())

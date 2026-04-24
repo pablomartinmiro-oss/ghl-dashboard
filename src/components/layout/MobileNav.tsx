@@ -13,6 +13,7 @@ import {
   FileText,
   Package,
   CalendarCheck,
+  Wallet,
 } from "lucide-react";
 import {
   Sheet,
@@ -39,6 +40,7 @@ const NAV_ITEMS: MobileNavItem[] = [
   { label: "Comunicaciones", href: "/comms", icon: MessageSquare, permission: "comms:view" },
   { label: "Contactos", href: "/contacts", icon: Users, permission: "contacts:view" },
   { label: "Pipeline", href: "/pipeline", icon: Kanban, permission: "pipelines:view" },
+  { label: "Contabilidad", href: "/contabilidad", icon: Wallet, permission: null },
   { label: "Ajustes", href: "/settings", icon: Settings, permission: "settings:team" },
 ];
 
