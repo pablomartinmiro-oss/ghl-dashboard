@@ -18,6 +18,7 @@ import {
   ShieldCheck,
   Megaphone,
   Store,
+  FileCode,
 } from "lucide-react";
 import {
   Sheet,
@@ -49,6 +50,7 @@ const NAV_ITEMS: MobileNavItem[] = [
   { label: "REAV", href: "/reav", icon: ShieldCheck, permission: null },
   { label: "Marketing", href: "/marketing", icon: Megaphone, permission: null },
   { label: "Tienda", href: "/tienda", icon: Store, permission: null },
+  { label: "Plantillas", href: "/plantillas", icon: FileCode, permission: null },
   { label: "Ajustes", href: "/settings", icon: Settings, permission: "settings:team" },
 ];
 

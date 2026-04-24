@@ -80,6 +80,8 @@ model Tenant {
   promotions         Promotion[]
   storefrontConfig   StorefrontConfig?
   bookingRequests    BookingRequest[]
+  documentTemplates  DocumentTemplate[]
+  generatedDocuments GeneratedDocument[]
 }
 
 // ==================== DESTINATIONS ====================
@@ -980,6 +982,42 @@ model StorefrontConfig {
   allowBookings  Boolean  @default(true)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
+}
+
+// ==================== DOCUMENT TEMPLATES ====================
+model DocumentTemplate {
+  id          String   @id @default(cuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  type        String   // "quote_pdf", "invoice_pdf", "booking_confirmation", "booking_reminder", "welcome_email", "settlement_pdf"
+  name        String
+  subject     String?
+  htmlBody    String
+  variables   Json?
+  isDefault   Boolean  @default(false)
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([tenantId])
+  @@index([tenantId, type])
+}
+
+model GeneratedDocument {
+  id             String   @id @default(cuid())
+  tenantId       String
+  tenant         Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  templateId     String?
+  type           String
+  title          String
+  htmlContent    String
+  recipientEmail String?
+  sentAt         DateTime?
+  metadata       Json?
+  createdAt      DateTime @default(now())
+
+  @@index([tenantId])
+  @@index([tenantId, type])
 }
 
 model BookingRequest {

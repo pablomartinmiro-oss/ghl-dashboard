@@ -20,6 +20,7 @@ import {
   ShieldCheck,
   Megaphone,
   Store,
+  FileCode,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -119,6 +120,13 @@ const NAV_ITEMS: NavItem[] = [
     label: "Tienda",
     href: "/tienda",
     icon: Store,
+    permission: null,
+    roles: ["Owner / Manager"],
+  },
+  {
+    label: "Plantillas",
+    href: "/plantillas",
+    icon: FileCode,
     permission: null,
     roles: ["Owner / Manager"],
   },
