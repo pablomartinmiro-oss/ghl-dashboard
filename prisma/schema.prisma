@@ -42,6 +42,9 @@ model Tenant {
   lastSyncAt      DateTime?
   lastSyncError   String?
 
+  // White-label modules
+  enabledModules  Json?     @default("{\"crm\":true,\"reservations\":true,\"quotes\":true,\"catalog\":true,\"communications\":true,\"pipeline\":true}")
+
   isActive        Boolean   @default(true)
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
@@ -62,6 +65,100 @@ model Tenant {
   cachedPipelines    CachedPipeline[]
   syncStatus         SyncStatus?
   seasonCalendar     SeasonCalendar[]
+  destinations       Destination[]
+  suppliers          Supplier[]
+  serviceCategories  ServiceCategory[]
+  branding           TenantBranding?
+}
+
+// ==================== DESTINATIONS ====================
+model Destination {
+  id          String   @id @default(cuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name        String
+  slug        String
+  country     String   @default("ES")
+  region      String?
+  timezone    String   @default("Europe/Madrid")
+  latitude    Float?
+  longitude   Float?
+  isActive    Boolean  @default(true)
+  metadata    Json?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  products    Product[]
+
+  @@unique([tenantId, slug])
+  @@index([tenantId])
+}
+
+// ==================== SUPPLIERS ====================
+model Supplier {
+  id          String   @id @default(cuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name        String
+  slug        String
+  cif         String?
+  email       String?
+  phone       String?
+  website     String?
+  address     String?
+  contactName String?
+  notes       String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  products    Product[]
+
+  @@unique([tenantId, slug])
+  @@index([tenantId])
+}
+
+// ==================== SERVICE CATEGORIES ====================
+model ServiceCategory {
+  id          String   @id @default(cuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name        String
+  slug        String
+  icon        String?
+  sortOrder   Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  products    Product[]
+
+  @@unique([tenantId, slug])
+  @@index([tenantId])
+}
+
+// ==================== TENANT BRANDING ====================
+model TenantBranding {
+  id              String   @id @default(cuid())
+  tenantId        String   @unique
+  tenant          Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  businessName    String
+  logoUrl         String?
+  faviconUrl      String?
+  primaryColor    String   @default("#E87B5A")
+  secondaryColor  String?
+  accentColor     String?
+  tagline         String?
+  supportEmail    String?
+  supportPhone    String?
+  website         String?
+  address         String?
+  cif             String?
+  timezone        String   @default("Europe/Madrid")
+  currency        String   @default("EUR")
+  locale          String   @default("es-ES")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 }
 
 // ==================== USER ====================
@@ -159,14 +256,26 @@ model Product {
   pricingMatrix  Json?    // Season-aware pricing: { media: {...}, alta: {...} }
   isActive       Boolean  @default(true)
   sortOrder      Int      @default(0)
+
+  // White-label relations (optional — hardcoded station/category still supported)
+  destinationId     String?
+  supplierId        String?
+  serviceCategoryId String?
+
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
   tenant         Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  destination    Destination?     @relation(fields: [destinationId], references: [id], onDelete: SetNull)
+  supplier       Supplier?        @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+  serviceCategory ServiceCategory? @relation(fields: [serviceCategoryId], references: [id], onDelete: SetNull)
   quoteItems     QuoteItem[]
 
   @@index([station, category])
   @@index([category])
+  @@index([destinationId])
+  @@index([supplierId])
+  @@index([serviceCategoryId])
 }
 
 // ==================== SEASON CALENDAR ====================
