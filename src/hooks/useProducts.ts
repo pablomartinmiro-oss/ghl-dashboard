@@ -17,6 +17,12 @@ interface Product {
   pricingMatrix: Record<string, unknown> | null;
   isActive: boolean;
   sortOrder: number;
+  destinationId: string | null;
+  supplierId: string | null;
+  serviceCategoryId: string | null;
+  destination?: { id: string; name: string; slug: string; region: string | null } | null;
+  supplier?: { id: string; name: string; slug: string } | null;
+  serviceCategory?: { id: string; name: string; slug: string; icon: string | null } | null;
   createdAt: string;
   updatedAt: string;
 }

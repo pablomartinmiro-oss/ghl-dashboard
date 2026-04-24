@@ -14,6 +14,7 @@ export async function GET(request: NextRequest) {
   const { searchParams } = request.nextUrl;
   const category = searchParams.get("category");
   const station = searchParams.get("station");
+  const destinationId = searchParams.get("destinationId");
 
   try {
     const where: Record<string, unknown> = {
@@ -22,10 +23,16 @@ export async function GET(request: NextRequest) {
     };
     if (category) where.category = category;
     if (station) where.station = station;
+    if (destinationId) where.destinationId = destinationId;
 
     const products = await prisma.product.findMany({
       where,
       orderBy: [{ sortOrder: "asc" }, { category: "asc" }, { name: "asc" }],
+      include: {
+        destination: { select: { id: true, name: true, slug: true, region: true } },
+        supplier: { select: { id: true, name: true, slug: true } },
+        serviceCategory: { select: { id: true, name: true, slug: true, icon: true } },
+      },
     });
 
     log.info({ count: products.length }, "Products fetched");
@@ -65,6 +72,9 @@ export async function POST(request: NextRequest) {
         pricingMatrix: body.pricingMatrix ? JSON.parse(JSON.stringify(body.pricingMatrix)) : null,
         sortOrder: body.sortOrder ?? 0,
         isActive: body.isActive ?? true,
+        destinationId: body.destinationId || null,
+        supplierId: body.supplierId || null,
+        serviceCategoryId: body.serviceCategoryId || null,
       },
     });
 

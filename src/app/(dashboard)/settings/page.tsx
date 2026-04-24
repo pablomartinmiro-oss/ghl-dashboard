@@ -15,7 +15,11 @@ import { SeasonCalendarCard } from "./_components/SeasonCalendarCard";
 import { PriceImportCard } from "./_components/PriceImportCard";
 import { SeedCatalogCard } from "./_components/SeedCatalogCard";
 import { SurveyUrlCard } from "./_components/SurveyUrlCard";
-import { Building2, RefreshCw, Package, Plug, Users } from "lucide-react";
+import { DestinationsCard } from "./_components/DestinationsCard";
+import { SuppliersCard } from "./_components/SuppliersCard";
+import { CategoriesCard } from "./_components/CategoriesCard";
+import { BrandingCard } from "./_components/BrandingCard";
+import { Building2, RefreshCw, Package, Plug, Users, Palette, Globe2 } from "lucide-react";
 import { toast } from "sonner";
 
 function SectionHeader({ icon: Icon, title }: { icon: React.ElementType; title: string }) {

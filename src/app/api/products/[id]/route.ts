@@ -40,6 +40,9 @@ export async function PATCH(
         ...(body.pricingMatrix !== undefined && { pricingMatrix: body.pricingMatrix ? JSON.parse(JSON.stringify(body.pricingMatrix)) : null }),
         ...(body.sortOrder !== undefined && { sortOrder: body.sortOrder }),
         ...(body.isActive !== undefined && { isActive: body.isActive }),
+        ...(body.destinationId !== undefined && { destinationId: body.destinationId || null }),
+        ...(body.supplierId !== undefined && { supplierId: body.supplierId || null }),
+        ...(body.serviceCategoryId !== undefined && { serviceCategoryId: body.serviceCategoryId || null }),
       },
     });
 
