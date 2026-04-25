@@ -28,6 +28,10 @@ import {
   GraduationCap,
   Share2,
   UsersRound,
+  Wrench,
+  CloudSnow,
+  BarChart3,
+  Code2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -182,6 +186,33 @@ const NAV_ITEMS: NavItem[] = [
     href: "/grupos",
     icon: UsersRound,
     permission: null,
+  },
+  {
+    label: "Equipamiento",
+    href: "/equipamiento",
+    icon: Wrench,
+    permission: null,
+    roles: ["Owner / Manager"],
+  },
+  {
+    label: "Meteo",
+    href: "/meteo",
+    icon: CloudSnow,
+    permission: null,
+  },
+  {
+    label: "Analytics",
+    href: "/analytics",
+    icon: BarChart3,
+    permission: null,
+    roles: ["Owner / Manager"],
+  },
+  {
+    label: "API",
+    href: "/api",
+    icon: Code2,
+    permission: null,
+    roles: ["Owner / Manager"],
   },
   {
     label: "Ajustes",

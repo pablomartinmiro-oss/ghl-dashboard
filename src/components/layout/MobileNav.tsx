@@ -26,6 +26,10 @@ import {
   GraduationCap,
   Share2,
   UsersRound,
+  Wrench,
+  CloudSnow,
+  BarChart3,
+  Code2,
 } from "lucide-react";
 import {
   Sheet,
@@ -65,6 +69,10 @@ const NAV_ITEMS: MobileNavItem[] = [
   { label: "Escuela", href: "/escuela", icon: GraduationCap, permission: null },
   { label: "Canales", href: "/canales", icon: Share2, permission: null },
   { label: "Grupos", href: "/grupos", icon: UsersRound, permission: null },
+  { label: "Equipamiento", href: "/equipamiento", icon: Wrench, permission: null },
+  { label: "Meteo", href: "/meteo", icon: CloudSnow, permission: null },
+  { label: "Analytics", href: "/analytics", icon: BarChart3, permission: null },
+  { label: "API", href: "/api", icon: Code2, permission: null },
   { label: "Ajustes", href: "/settings", icon: Settings, permission: "settings:team" },
 ];
 

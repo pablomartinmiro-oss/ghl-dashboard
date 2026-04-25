@@ -25,6 +25,9 @@ const PUBLIC_ROUTES = [
   "/api/suppliers/portal",
   "/tienda",
   "/api/storefront",
+  "/api/v1",
+  "/mi-reserva",
+  "/api/my-booking",
 ];
 
 export async function middleware(req: NextRequest) {

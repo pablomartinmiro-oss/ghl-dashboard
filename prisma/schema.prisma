@@ -101,6 +101,13 @@ model Tenant {
   channelBookings    ChannelBooking[]
   groupBookings      GroupBooking[]
   groupTemplates     GroupTemplate[]
+  equipmentUnits     EquipmentUnit[]
+  digitalWaivers     DigitalWaiver[]
+  weatherCache       WeatherCache[]
+  analyticsEvents    AnalyticsEvent[]
+  analyticsSnapshots AnalyticsSnapshot[]
+  apiKeys            ApiKey[]
+  webhookEndpoints   WebhookEndpoint[]
 }
 
 // ==================== DESTINATIONS ====================
@@ -1624,6 +1631,130 @@ model GroupTemplate {
   description         String?
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
+
+  @@index([tenantId])
+}
+
+// ==================== EQUIPMENT LIFECYCLE ====================
+model EquipmentUnit {
+  id              String    @id @default(cuid())
+  tenantId        String
+  tenant          Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  inventoryItemId String?
+  serialNumber    String
+  brand           String
+  model           String
+  category        String
+  purchaseDate    DateTime?
+  purchaseCents   Int?
+  currentValue    Int?
+  totalRentals    Int       @default(0)
+  condition       String    @default("new")
+  retiredAt       DateTime?
+  metadata        Json?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  waivers         DigitalWaiver[]
+
+  @@index([tenantId])
+  @@index([serialNumber])
+}
+
+model DigitalWaiver {
+  id            String         @id @default(cuid())
+  tenantId      String
+  tenant        Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  equipmentId   String?
+  equipment     EquipmentUnit? @relation(fields: [equipmentId], references: [id], onDelete: SetNull)
+  customerName  String
+  customerEmail String?
+  signatureData String?        @db.Text
+  signedAt      DateTime       @default(now())
+  reservationId String?
+  metadata      Json?
+
+  @@index([tenantId])
+}
+
+// ==================== WEATHER ====================
+model WeatherCache {
+  id            String   @id @default(cuid())
+  tenantId      String
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  destinationId String
+  date          DateTime
+  tempMin       Float?
+  tempMax       Float?
+  snowfall      Float?
+  windSpeed     Float?
+  conditions    String?
+  snowDepth     Int?
+  avalancheRisk String?
+  raw           Json?
+  fetchedAt     DateTime @default(now())
+
+  @@unique([tenantId, destinationId, date])
+  @@index([tenantId])
+}
+
+// ==================== ANALYTICS ====================
+model AnalyticsEvent {
+  id       String   @id @default(cuid())
+  tenantId String
+  tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  type     String
+  category String
+  value    Float?
+  metadata Json?
+  date     DateTime @default(now())
+
+  @@index([tenantId, type, date])
+}
+
+model AnalyticsSnapshot {
+  id        String   @id @default(cuid())
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  period    String
+  date      DateTime
+  metrics   Json
+  createdAt DateTime @default(now())
+
+  @@unique([tenantId, period, date])
+  @@index([tenantId])
+}
+
+// ==================== PUBLIC API ====================
+model ApiKey {
+  id          String    @id @default(cuid())
+  tenantId    String
+  tenant      Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name        String
+  keyHash     String    @unique
+  prefix      String
+  permissions Json
+  lastUsedAt  DateTime?
+  expiresAt   DateTime?
+  active      Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+
+  @@index([tenantId])
+  @@index([keyHash])
+}
+
+model WebhookEndpoint {
+  id            String    @id @default(cuid())
+  tenantId      String
+  tenant        Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  url           String
+  events        Json
+  secret        String?
+  active        Boolean   @default(true)
+  lastTriggered DateTime?
+  failCount     Int       @default(0)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
   @@index([tenantId])
 }
