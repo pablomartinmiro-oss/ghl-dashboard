@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { auth } from "@/lib/auth/config";
+import { prisma } from "@/lib/db";
 
 export async function DELETE(
   _request: NextRequest,
@@ -23,7 +23,7 @@ export async function DELETE(
 
   await prisma.apiKey.update({
     where: { id },
-    data: { active: false, revokedAt: new Date() },
+    data: { active: false },
   });
 
   return NextResponse.json({ data: { id, revoked: true } });

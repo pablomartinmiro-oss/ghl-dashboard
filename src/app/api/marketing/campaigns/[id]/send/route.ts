@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth/config";
 import { prisma } from "@/lib/db";
 import { logger } from "@/lib/logger";
+import type { Prisma } from "@/generated/prisma/client";
 
 interface AudienceFilter {
   tags?: string[];
@@ -103,7 +104,7 @@ export async function POST(
       data: {
         status: "active",
         startedAt: new Date(),
-        stats,
+        stats: stats as unknown as Prisma.InputJsonValue,
       },
     });
   });

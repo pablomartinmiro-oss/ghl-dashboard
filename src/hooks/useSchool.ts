@@ -78,6 +78,7 @@ export interface SchoolDashboard {
 }
 
 export interface LessonFilters {
+  [key: string]: string | undefined;
   date?: string;
   dateFrom?: string;
   dateTo?: string;

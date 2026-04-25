@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/lib/db";
 import { verifyApiKey } from "@/lib/api-auth/verify";
 
 export async function POST(request: NextRequest) {
@@ -13,19 +13,17 @@ export async function POST(request: NextRequest) {
   const booking = await prisma.bookingRequest.create({
     data: {
       tenantId: auth.tenantId,
-      source: body.source ?? "api",
       customerName: body.customerName ?? "",
       customerEmail: body.customerEmail ?? "",
       customerPhone: body.customerPhone ?? null,
-      destination: body.destination ?? null,
+      destinationId: body.destinationId ?? null,
       startDate: body.startDate ? new Date(body.startDate) : new Date(),
       endDate: body.endDate ? new Date(body.endDate) : new Date(),
-      partySize: body.partySize ?? 1,
-      products: body.products ?? [],
-      totalAmount: body.totalAmount ?? 0,
-      currency: body.currency ?? "EUR",
+      guests: body.guests ?? body.partySize ?? 1,
+      productIds: body.productIds ?? body.products ?? [],
+      totalCents: body.totalCents ?? null,
       status: "pending",
-      metadata: body.metadata ?? {},
+      metadata: { ...(body.metadata ?? {}), source: body.source ?? "api" },
     },
   });
 

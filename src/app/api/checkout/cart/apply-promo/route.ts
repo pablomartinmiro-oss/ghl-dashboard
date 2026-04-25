@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Cart not found" }, { status: 404 });
     }
 
-    const items = cart.items as CartItem[];
+    const items = cart.items as unknown as CartItem[];
     const { subtotalCents } = calculateTotals(items, 0);
 
     const result = await resolvePromoCode(

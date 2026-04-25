@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/lib/db";
 import { verifyApiKey } from "@/lib/api-auth/verify";
 
 export async function GET(request: NextRequest) {
@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
 
   const date = dateStr ? new Date(dateStr) : new Date();
 
-  let basePrice = product.basePrice ?? 0;
+  let basePrice = product.price ?? 0;
   const matrix = product.pricingMatrix as Record<string, unknown> | null;
   if (matrix && matrix[tier]) {
     const tierMatrix = matrix[tier] as Record<string, number>;
@@ -49,8 +49,11 @@ export async function GET(request: NextRequest) {
   const appliedRules: string[] = [];
 
   for (const rule of rules) {
-    const adjustment = (rule.adjustmentPercent ?? 0) / 100;
-    finalPrice = finalPrice * (1 + adjustment);
+    if (rule.adjustmentType === "percentage") {
+      finalPrice = finalPrice * (1 + rule.adjustmentValue / 100);
+    } else if (rule.adjustmentType === "fixed_cents") {
+      finalPrice = finalPrice + rule.adjustmentValue / 100;
+    }
     appliedRules.push(rule.name);
   }
 

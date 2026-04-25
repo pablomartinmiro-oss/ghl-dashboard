@@ -13,7 +13,7 @@ const LEVEL_BADGES: Record<string, { label: string; cls: string }> = {
 export default function AlumnosPage() {
   const [email, setEmail] = useState("");
   const [search, setSearch] = useState("");
-  const { data: progress, isLoading } = useStudentProgress(search || undefined);
+  const { data: progress, isLoading } = useStudentProgress(search || null);
 
   const handleSearch = () => { if (email.includes("@")) setSearch(email); };
 

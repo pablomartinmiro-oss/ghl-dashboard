@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/lib/db";
 
 export async function GET(
   _request: Request,
@@ -19,14 +19,13 @@ export async function GET(
     data: {
       id: booking.id,
       customerName: booking.customerName,
-      destination: booking.destination,
+      destinationId: booking.destinationId,
       startDate: booking.startDate,
       endDate: booking.endDate,
-      partySize: booking.partySize,
-      products: booking.products,
+      guests: booking.guests,
+      productIds: booking.productIds,
       status: booking.status,
-      totalAmount: booking.totalAmount,
-      currency: booking.currency,
+      totalCents: booking.totalCents,
     },
   });
 }

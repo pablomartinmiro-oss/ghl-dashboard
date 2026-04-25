@@ -7,7 +7,7 @@ import { ArrowLeft, Upload, Wand2, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { useGroup } from "@/hooks/useGroups";
+import { useGroup, useImportGroupMembers, useAutoSizeGroup } from "@/hooks/useGroups";
 
 const SKILL_LABEL: Record<string, string> = {
   none: "Sin nivel",
@@ -28,7 +28,9 @@ const TYPE_LABEL: Record<string, string> = {
 export default function GroupDetailPage() {
   const params = useParams<{ id: string }>();
   const id = params?.id ?? "";
-  const { data: group, isLoading, importMembers, autoSize, refetch } = useGroup(id);
+  const { data: group, isLoading, refetch } = useGroup(id);
+  const importMembers = useImportGroupMembers();
+  const autoSize = useAutoSizeGroup();
   const fileRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
 
@@ -37,7 +39,7 @@ export default function GroupDetailPage() {
     if (!file) return;
     setBusy(true);
     const text = await file.text();
-    await importMembers.mutateAsync(text);
+    await importMembers.mutateAsync({ groupId: id, csv: text });
     await refetch();
     setBusy(false);
     if (fileRef.current) fileRef.current.value = "";
@@ -45,7 +47,7 @@ export default function GroupDetailPage() {
 
   const handleAutoSize = async () => {
     setBusy(true);
-    await autoSize.mutateAsync();
+    await autoSize.mutateAsync(id);
     await refetch();
     setBusy(false);
   };
@@ -55,8 +57,8 @@ export default function GroupDetailPage() {
   }
 
   const members = group.members ?? [];
-  const totalPricing = group.totalPricing ?? 0;
-  const pricePerPerson = members.length > 0 ? totalPricing / members.length : 0;
+  const totalEur = (group.totalCents ?? 0) / 100;
+  const pricePerPerson = members.length > 0 ? totalEur / members.length : 0;
 
   return (
     <div className="space-y-6">
@@ -71,7 +73,7 @@ export default function GroupDetailPage() {
             {group.organizerName} · {group.organizerEmail || "—"} · {TYPE_LABEL[group.type] ?? group.type}
           </p>
           <div className="flex gap-2 mt-2">
-            <Badge variant="outline">{group.size} miembros previstos</Badge>
+            <Badge variant="outline">{group.estimatedSize} miembros previstos</Badge>
             <Badge variant="outline">
               {group.startDate ? new Date(group.startDate).toLocaleDateString("es-ES") : "—"} → {group.endDate ? new Date(group.endDate).toLocaleDateString("es-ES") : "—"}
             </Badge>
@@ -90,7 +92,7 @@ export default function GroupDetailPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card><CardContent className="p-4"><div className="flex items-center gap-3"><Users className="h-5 w-5 text-[#E87B5A]" /><div><p className="text-xs text-[#8A8580]">Miembros</p><p className="text-2xl font-semibold">{members.length}</p></div></div></CardContent></Card>
-        <Card><CardContent className="p-4"><div><p className="text-xs text-[#8A8580]">Total estimado</p><p className="text-2xl font-semibold">{totalPricing.toLocaleString("es-ES", { style: "currency", currency: "EUR" })}</p></div></CardContent></Card>
+        <Card><CardContent className="p-4"><div><p className="text-xs text-[#8A8580]">Total estimado</p><p className="text-2xl font-semibold">{totalEur.toLocaleString("es-ES", { style: "currency", currency: "EUR" })}</p></div></CardContent></Card>
         <Card><CardContent className="p-4"><div><p className="text-xs text-[#8A8580]">Por persona</p><p className="text-2xl font-semibold">{pricePerPerson.toLocaleString("es-ES", { style: "currency", currency: "EUR" })}</p></div></CardContent></Card>
       </div>
 
@@ -113,14 +115,12 @@ export default function GroupDetailPage() {
                 <th className="px-4 py-3">Peso</th>
                 <th className="px-4 py-3">Pie</th>
                 <th className="px-4 py-3">Nivel</th>
-                <th className="px-4 py-3">Esquí</th>
-                <th className="px-4 py-3">Botas</th>
-                <th className="px-4 py-3">Casco</th>
+                <th className="px-4 py-3">Notas</th>
               </tr>
             </thead>
             <tbody>
               {members.length === 0 ? (
-                <tr><td colSpan={9} className="px-4 py-12 text-center text-[#8A8580]">
+                <tr><td colSpan={7} className="px-4 py-12 text-center text-[#8A8580]">
                   No hay miembros. Importa un CSV para empezar.
                 </td></tr>
               ) : (
@@ -132,9 +132,7 @@ export default function GroupDetailPage() {
                     <td className="px-4 py-3">{m.weightKg ? `${m.weightKg} kg` : "—"}</td>
                     <td className="px-4 py-3">{m.shoeSize ?? "—"}</td>
                     <td className="px-4 py-3">{SKILL_LABEL[m.skiLevel ?? "none"] ?? m.skiLevel}</td>
-                    <td className="px-4 py-3 text-[#8A8580]">{m.skiSize ? `${m.skiSize} cm` : "—"}</td>
-                    <td className="px-4 py-3 text-[#8A8580]">{m.bootSize ?? "—"}</td>
-                    <td className="px-4 py-3 text-[#8A8580]">{m.helmetSize ?? "—"}</td>
+                    <td className="px-4 py-3 text-[#8A8580]">{m.notes ?? "—"}</td>
                   </tr>
                 ))
               )}

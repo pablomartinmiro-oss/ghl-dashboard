@@ -69,6 +69,9 @@ export interface SyncFieldsData {
   last_booking_date?: string | null;
   equipment_preference?: string | null;
   loyalty_tier?: string | null;
+  last_lesson_date?: string | null;
+  student_level?: string | null;
+  total_lessons?: number | null;
 }
 
 export async function syncContactFields(
@@ -78,14 +81,15 @@ export async function syncContactFields(
 ): Promise<void> {
   try {
     const ghl = await getGHLClient(tenantId);
-    const customFields = Object.entries(data)
-      .filter(([, v]) => v !== undefined && v !== null && v !== "")
-      .map(([key, value]) => ({ key, field_value: value }));
-    if (!customFields.length) return;
-    await ghl.updateContact(contactId, {
-      customFields: customFields as unknown as Record<string, unknown>[],
-    });
-    log.info({ tenantId, contactId, count: customFields.length }, "Synced custom fields to GHL");
+    const customField: Record<string, string> = {};
+    for (const [key, value] of Object.entries(data)) {
+      if (value === undefined || value === null || value === "") continue;
+      customField[key] = String(value);
+    }
+    const count = Object.keys(customField).length;
+    if (!count) return;
+    await ghl.updateContact(contactId, { customField });
+    log.info({ tenantId, contactId, count }, "Synced custom fields to GHL");
   } catch (err) {
     log.error({ tenantId, contactId, error: err }, "Failed to sync contact fields to GHL");
   }

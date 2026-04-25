@@ -55,7 +55,7 @@ export async function handlePaymentSucceeded(paymentIntentId: string) {
   if (intent.cartId) {
     const cart = await prisma.cart.findUnique({ where: { id: intent.cartId } });
     if (cart) {
-      const items = cart.items as CartItem[];
+      const items = cart.items as unknown as CartItem[];
       for (const item of items) {
         if (!item.startDate || !item.endDate) continue;
         try {

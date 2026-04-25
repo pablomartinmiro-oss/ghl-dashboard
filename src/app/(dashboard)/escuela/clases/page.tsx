@@ -1,8 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useLessons, useCreateLesson, useAutoAssign } from "@/hooks/useSchool";
-import { useWhiteLabel } from "@/hooks/useWhiteLabel";
+import { useLessons, useCreateLesson, useAutoAssign, type Lesson } from "@/hooks/useSchool";
 
 const TYPE_BADGES: Record<string, { label: string; cls: string }> = {
   group: { label: "Grupal", cls: "bg-blue-100 text-blue-700" },
@@ -25,19 +24,23 @@ export default function ClasesPage() {
   const [form, setForm] = useState({ type: "group", date: "", startTime: "09:00", endTime: "11:00", maxStudents: 8, studentLevel: "beginner", language: "es", priceCents: 5000, destinationId: "", notes: "" });
 
   const { data: lessons, isLoading } = useLessons({ date });
-  const { data: wl } = useWhiteLabel();
   const create = useCreateLesson();
   const autoAssign = useAutoAssign();
 
   const handleAutoAssign = async () => {
     if (!form.date || !form.startTime) return;
-    const res = await autoAssign.mutateAsync({ date: form.date, startTime: form.startTime, endTime: form.endTime, language: form.language, level: form.studentLevel });
-    if (res?.instructors?.[0]) alert(`Mejor profesor: ${res.instructors[0].firstName} ${res.instructors[0].lastName}`);
-    else alert("No hay profesores disponibles");
+    const created = await create.mutateAsync({ ...form, priceCents: Number(form.priceCents), maxStudents: Number(form.maxStudents) } as Partial<Lesson>);
+    const res = await autoAssign.mutateAsync({ lessonId: created.lesson.id });
+    if (res.instructorId && res.lesson.instructor) {
+      alert(`Mejor profesor: ${res.lesson.instructor.firstName} ${res.lesson.instructor.lastName}`);
+    } else {
+      alert("No hay profesores disponibles");
+    }
+    setShowAdd(false);
   };
 
   const handleCreate = () => {
-    create.mutate({ ...form, priceCents: Number(form.priceCents), maxStudents: Number(form.maxStudents) });
+    create.mutate({ ...form, priceCents: Number(form.priceCents), maxStudents: Number(form.maxStudents) } as Partial<Lesson>);
     setShowAdd(false);
   };
 
@@ -89,16 +92,16 @@ export default function ClasesPage() {
           <tbody>
             {isLoading ? <tr><td colSpan={6} className="px-4 py-8 text-center text-text-secondary">Cargando...</td></tr> :
             !lessons?.length ? <tr><td colSpan={6} className="px-4 py-8 text-center text-text-secondary">Sin clases para esta fecha</td></tr> :
-            lessons.map((l: Record<string, unknown>) => {
-              const tb = TYPE_BADGES[(l.type as string)] ?? { label: l.type, cls: "bg-zinc-100 text-zinc-700" };
-              const sb = STATUS_BADGES[(l.status as string)] ?? { label: l.status, cls: "bg-zinc-100 text-zinc-700" };
+            (lessons as Lesson[]).map((l) => {
+              const tb = TYPE_BADGES[l.type] ?? { label: l.type, cls: "bg-zinc-100 text-zinc-700" };
+              const sb = STATUS_BADGES[l.status] ?? { label: l.status, cls: "bg-zinc-100 text-zinc-700" };
               return (
-                <tr key={l.id as string} className="border-b border-warm-border last:border-0">
-                  <td className="px-4 py-3 font-mono">{l.startTime as string}–{l.endTime as string}</td>
-                  <td className="px-4 py-3">{l.instructor ? `${(l.instructor as Record<string, string>).firstName} ${(l.instructor as Record<string, string>).lastName}` : "—"}</td>
+                <tr key={l.id} className="border-b border-warm-border last:border-0">
+                  <td className="px-4 py-3 font-mono">{l.startTime}–{l.endTime}</td>
+                  <td className="px-4 py-3">{l.instructor ? `${l.instructor.firstName} ${l.instructor.lastName}` : "—"}</td>
                   <td className="px-4 py-3"><span className={`rounded-md px-2 py-0.5 text-xs font-medium ${tb.cls}`}>{tb.label}</span></td>
-                  <td className="px-4 py-3">{l.currentStudents as number}/{l.maxStudents as number}</td>
-                  <td className="px-4 py-3 capitalize">{(l.studentLevel as string) ?? "—"}</td>
+                  <td className="px-4 py-3">{l.currentStudents}/{l.maxStudents}</td>
+                  <td className="px-4 py-3 capitalize">{l.studentLevel ?? "—"}</td>
                   <td className="px-4 py-3"><span className={`rounded-md px-2 py-0.5 text-xs font-medium ${sb.cls}`}>{sb.label}</span></td>
                 </tr>
               );

@@ -73,7 +73,7 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: "Cart not found" }, { status: 404 });
       }
 
-      const items = (data.items ?? (existing.items as CartItem[])) as CartItem[];
+      const items = (data.items ?? (existing.items as unknown as CartItem[])) as CartItem[];
       const { subtotalCents, totalCents } = calculateTotals(items, existing.discountCents);
 
       const updated = await prisma.cart.update({

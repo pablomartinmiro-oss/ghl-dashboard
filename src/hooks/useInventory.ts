@@ -145,6 +145,7 @@ export function useInventoryCategories() {
 }
 
 export interface ItemFilters {
+  [key: string]: string | undefined;
   categoryId?: string;
   destinationId?: string;
   status?: string;
@@ -354,6 +355,7 @@ export function useCreateMaintenance() {
 }
 
 export interface AvailabilityFilters {
+  [key: string]: string | undefined;
   startDate: string;
   endDate: string;
   destinationId?: string;

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { randomBytes } from "crypto";
-import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { auth } from "@/lib/auth/config";
+import { prisma } from "@/lib/db";
 import { hashApiKey } from "@/lib/api-auth/verify";
 
 export async function GET() {
@@ -52,7 +52,6 @@ export async function POST(request: NextRequest) {
       keyHash,
       permissions,
       active: true,
-      createdById: session.user.id,
     },
   });
 

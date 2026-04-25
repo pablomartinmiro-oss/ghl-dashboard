@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { randomBytes } from "crypto";
-import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { auth } from "@/lib/auth/config";
+import { prisma } from "@/lib/db";
 
 export async function GET() {
   const session = await auth();
@@ -34,7 +34,6 @@ export async function POST(request: NextRequest) {
       events: Array.isArray(body.events) ? body.events : [],
       secret,
       active: body.active !== false,
-      description: body.description ?? null,
     },
   });
 

@@ -14,8 +14,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { useGroupTemplates } from "@/hooks/useGroups";
+import { useGroupTemplates, useCreateGroupTemplate } from "@/hooks/useGroups";
 
 const TYPE_LABEL: Record<string, string> = {
   school: "Colegio",
@@ -26,7 +25,8 @@ const TYPE_LABEL: Record<string, string> = {
 };
 
 export default function GroupTemplatesPage() {
-  const { data: templates = [], isLoading, create } = useGroupTemplates();
+  const { data: templates = [], isLoading } = useGroupTemplates();
+  const create = useCreateGroupTemplate();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({
     name: "",
@@ -41,7 +41,8 @@ export default function GroupTemplatesPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await create.mutateAsync(form);
+    const { pricePerPerson, type, ...rest } = form;
+    await create.mutateAsync({ ...rest, type: type as "school" | "company" | "club" | "family" | "other", pricePerPersonCents: Math.round(pricePerPerson * 100) });
     setOpen(false);
     setForm({ name: "", type: "school", defaultSize: 25, defaultDays: 5, includesEquipment: true, includesLessons: true, discountPct: 10, pricePerPerson: 0 });
   };
@@ -65,12 +66,12 @@ export default function GroupTemplatesPage() {
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-3">
               <div>
-                <Label>Nombre</Label>
+                <label>Nombre</label>
                 <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <Label>Tipo</Label>
+                  <label>Tipo</label>
                   <select className="w-full h-10 px-3 rounded-[10px] border border-[#E8E4DE] bg-white" value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}>
                     <option value="school">Colegio</option>
                     <option value="company">Empresa</option>
@@ -80,22 +81,22 @@ export default function GroupTemplatesPage() {
                   </select>
                 </div>
                 <div>
-                  <Label>Tamaño por defecto</Label>
+                  <label>Tamaño por defecto</label>
                   <Input type="number" value={form.defaultSize} onChange={(e) => setForm({ ...form, defaultSize: Number(e.target.value) })} required />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <Label>Días</Label>
+                  <label>Días</label>
                   <Input type="number" value={form.defaultDays} onChange={(e) => setForm({ ...form, defaultDays: Number(e.target.value) })} required />
                 </div>
                 <div>
-                  <Label>Descuento %</Label>
+                  <label>Descuento %</label>
                   <Input type="number" value={form.discountPct} onChange={(e) => setForm({ ...form, discountPct: Number(e.target.value) })} />
                 </div>
               </div>
               <div>
-                <Label>Precio por persona (€)</Label>
+                <label>Precio por persona (€)</label>
                 <Input type="number" step="0.01" value={form.pricePerPerson} onChange={(e) => setForm({ ...form, pricePerPerson: Number(e.target.value) })} />
               </div>
               <div className="flex gap-4">
@@ -145,7 +146,7 @@ export default function GroupTemplatesPage() {
                     <td className="px-4 py-3">{t.includesEquipment ? "Sí" : "No"}</td>
                     <td className="px-4 py-3">{t.includesLessons ? "Sí" : "No"}</td>
                     <td className="px-4 py-3">{t.discountPct}%</td>
-                    <td className="px-4 py-3">{(t.pricePerPerson ?? 0).toLocaleString("es-ES", { style: "currency", currency: "EUR" })}</td>
+                    <td className="px-4 py-3">{((t.pricePerPersonCents ?? 0) / 100).toLocaleString("es-ES", { style: "currency", currency: "EUR" })}</td>
                   </tr>
                 ))
               )}

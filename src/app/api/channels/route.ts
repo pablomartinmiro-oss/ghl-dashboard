@@ -3,7 +3,7 @@ import { z } from "zod";
 import { auth } from "@/lib/auth/config";
 import { prisma } from "@/lib/db";
 import { logger } from "@/lib/logger";
-import type { Prisma } from "@/generated/prisma/client";
+import { Prisma } from "@/generated/prisma/client";
 
 const log = logger.child({ route: "channels" });
 

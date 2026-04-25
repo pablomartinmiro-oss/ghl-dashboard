@@ -14,8 +14,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { useGroups } from "@/hooks/useGroups";
+import { useGroups, useCreateGroup } from "@/hooks/useGroups";
 
 const TYPE_STYLES: Record<string, string> = {
   school: "bg-blue-100 text-blue-700",
@@ -50,14 +49,15 @@ const STATUS_LABEL: Record<string, string> = {
 };
 
 export default function GruposPage() {
-  const { data: groups = [], isLoading, create } = useGroups();
+  const { data: groups = [], isLoading } = useGroups();
+  const create = useCreateGroup();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({
     name: "",
     organizerName: "",
     organizerEmail: "",
     type: "school",
-    size: 20,
+    estimatedSize: 20,
     startDate: "",
     endDate: "",
   });
@@ -66,14 +66,14 @@ export default function GruposPage() {
     total: groups.length,
     schools: groups.filter((g) => g.type === "school").length,
     confirmed: groups.filter((g) => g.status === "confirmed").length,
-    members: groups.reduce((sum, g) => sum + (g.size || 0), 0),
+    members: groups.reduce((sum, g) => sum + (g.estimatedSize || 0), 0),
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await create.mutateAsync(form);
+    await create.mutateAsync(form as Parameters<typeof create.mutateAsync>[0]);
     setOpen(false);
-    setForm({ name: "", organizerName: "", organizerEmail: "", type: "school", size: 20, startDate: "", endDate: "" });
+    setForm({ name: "", organizerName: "", organizerEmail: "", type: "school", estimatedSize: 20, startDate: "", endDate: "" });
   };
 
   return (
@@ -95,22 +95,22 @@ export default function GruposPage() {
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-3">
                 <div>
-                  <Label>Nombre</Label>
+                  <label>Nombre</label>
                   <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <Label>Organizador</Label>
+                    <label>Organizador</label>
                     <Input value={form.organizerName} onChange={(e) => setForm({ ...form, organizerName: e.target.value })} required />
                   </div>
                   <div>
-                    <Label>Email</Label>
+                    <label>Email</label>
                     <Input type="email" value={form.organizerEmail} onChange={(e) => setForm({ ...form, organizerEmail: e.target.value })} />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <Label>Tipo</Label>
+                    <label>Tipo</label>
                     <select className="w-full h-10 px-3 rounded-[10px] border border-[#E8E4DE] bg-white" value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}>
                       <option value="school">Colegio</option>
                       <option value="company">Empresa</option>
@@ -120,17 +120,17 @@ export default function GruposPage() {
                     </select>
                   </div>
                   <div>
-                    <Label>Tamaño</Label>
-                    <Input type="number" value={form.size} onChange={(e) => setForm({ ...form, size: Number(e.target.value) })} required />
+                    <label>Tamaño</label>
+                    <Input type="number" value={form.estimatedSize} onChange={(e) => setForm({ ...form, estimatedSize: Number(e.target.value) })} required />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <Label>Inicio</Label>
+                    <label>Inicio</label>
                     <Input type="date" value={form.startDate} onChange={(e) => setForm({ ...form, startDate: e.target.value })} />
                   </div>
                   <div>
-                    <Label>Fin</Label>
+                    <label>Fin</label>
                     <Input type="date" value={form.endDate} onChange={(e) => setForm({ ...form, endDate: e.target.value })} />
                   </div>
                 </div>
@@ -174,7 +174,7 @@ export default function GruposPage() {
                     <td className="px-4 py-3 font-medium">{g.name}</td>
                     <td className="px-4 py-3 text-[#8A8580]">{g.organizerName}</td>
                     <td className="px-4 py-3"><Badge className={TYPE_STYLES[g.type] ?? TYPE_STYLES.other}>{TYPE_LABEL[g.type] ?? g.type}</Badge></td>
-                    <td className="px-4 py-3">{g.size}</td>
+                    <td className="px-4 py-3">{g.estimatedSize}</td>
                     <td className="px-4 py-3 text-[#8A8580] text-xs">{g.startDate ? new Date(g.startDate).toLocaleDateString("es-ES") : "—"} → {g.endDate ? new Date(g.endDate).toLocaleDateString("es-ES") : "—"}</td>
                     <td className="px-4 py-3"><Badge className={STATUS_STYLES[g.status] ?? STATUS_STYLES.inquiry}>{STATUS_LABEL[g.status] ?? g.status}</Badge></td>
                     <td className="px-4 py-3 text-right"><Link href={`/grupos/${g.id}`} className="text-[#E87B5A] hover:underline">Ver →</Link></td>

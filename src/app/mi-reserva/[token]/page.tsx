@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/lib/db";
 
 type Params = { token: string };
 
@@ -28,15 +28,17 @@ export default async function MiReservaPage({
     month: "long",
     day: "numeric",
   });
-  const endDate = new Date(booking.endDate).toLocaleDateString("es-ES", {
-    weekday: "long",
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
+  const endDate = booking.endDate
+    ? new Date(booking.endDate).toLocaleDateString("es-ES", {
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      })
+    : "—";
 
-  const products = Array.isArray(booking.products)
-    ? (booking.products as Array<Record<string, unknown>>)
+  const products = Array.isArray(booking.productIds)
+    ? (booking.productIds as Array<Record<string, unknown>>)
     : [];
 
   return (
@@ -71,7 +73,7 @@ export default async function MiReservaPage({
         </h2>
         <div>
           <div className="text-xs text-[#8A8580]">Destino</div>
-          <div className="font-medium">{booking.destination ?? "—"}</div>
+          <div className="font-medium">{booking.destinationId ?? "—"}</div>
         </div>
         <div>
           <div className="text-xs text-[#8A8580]">Inicio</div>
@@ -83,7 +85,7 @@ export default async function MiReservaPage({
         </div>
         <div>
           <div className="text-xs text-[#8A8580]">Personas</div>
-          <div className="font-medium">{booking.partySize}</div>
+          <div className="font-medium">{booking.guests}</div>
         </div>
       </section>
 
