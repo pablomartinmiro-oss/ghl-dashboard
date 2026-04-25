@@ -19,7 +19,8 @@ import { DestinationsCard } from "./_components/DestinationsCard";
 import { SuppliersCard } from "./_components/SuppliersCard";
 import { CategoriesCard } from "./_components/CategoriesCard";
 import { BrandingCard } from "./_components/BrandingCard";
-import { Building2, RefreshCw, Package, Plug, Users, Palette, Globe2 } from "lucide-react";
+import { GHLAutomationCard } from "./_components/GHLAutomationCard";
+import { Building2, RefreshCw, Package, Plug, Users, Palette, Globe2, Zap } from "lucide-react";
 import { toast } from "sonner";
 
 function SectionHeader({ icon: Icon, title }: { icon: React.ElementType; title: string }) {
@@ -169,6 +170,16 @@ export default function SettingsPage() {
             <SurveyUrlCard slug={tenant?.slug ?? ""} loading={tenantLoading} />
             <GrouponMappingCard />
           </div>
+        </section>
+      </RoleGate>
+
+      <SectionDivider />
+
+      {/* Automatización */}
+      <RoleGate permission="settings:tenant">
+        <section>
+          <SectionHeader icon={Zap} title="Automatización" />
+          <GHLAutomationCard />
         </section>
       </RoleGate>
 

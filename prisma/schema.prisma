@@ -84,6 +84,11 @@ model Tenant {
   generatedDocuments GeneratedDocument[]
   reviews            Review[]
   reviewRequests     ReviewRequest[]
+  inventoryCategories InventoryCategory[]
+  inventoryItems     InventoryItem[]
+  inventoryReservations InventoryReservation[]
+  sizingProfiles     SizingProfile[]
+  ghlAutomationConfig GHLAutomationConfig?
 }
 
 // ==================== DESTINATIONS ====================
@@ -107,6 +112,7 @@ model Destination {
   opsEvents   OpsEvent[]
   incidentReports IncidentReport[]
   reviews     Review[]
+  inventoryItems InventoryItem[]
 
   @@unique([tenantId, slug])
   @@index([tenantId])
@@ -1091,4 +1097,146 @@ model BookingRequest {
 
   @@index([tenantId])
   @@index([tenantId, status])
+}
+
+// ==================== INVENTORY ====================
+model InventoryCategory {
+  id          String   @id @default(cuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name        String
+  slug        String
+  sizeType    String   // "length_cm", "eu_shoe", "head_cm", "generic_sml"
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  items       InventoryItem[]
+
+  @@unique([tenantId, slug])
+  @@index([tenantId])
+}
+
+model InventoryItem {
+  id              String   @id @default(cuid())
+  tenantId        String
+  tenant          Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  categoryId      String
+  category        InventoryCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  destinationId   String
+  destination     Destination @relation(fields: [destinationId], references: [id], onDelete: Cascade)
+  name            String
+  brand           String?
+  model           String?
+  size            String
+  serialNumber    String?
+  condition       String   @default("good") // "new", "good", "fair", "maintenance", "retired"
+  purchaseDate    DateTime?
+  purchaseCents   Int?
+  seasonsPurchased Int     @default(0)
+  totalRentals    Int      @default(0)
+  lastMaintenance DateTime?
+  notes           String?
+  status          String   @default("available") // "available", "reserved", "rented", "maintenance", "retired"
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  reservations    InventoryReservation[]
+  maintenanceLogs MaintenanceLog[]
+
+  @@index([tenantId, status])
+  @@index([tenantId, destinationId])
+  @@index([tenantId, categoryId])
+  @@index([serialNumber])
+}
+
+model InventoryReservation {
+  id              String   @id @default(cuid())
+  tenantId        String
+  tenant          Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  itemId          String
+  item            InventoryItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  reservationId   String?
+  customerName    String
+  customerEmail   String?
+  startDate       DateTime
+  endDate         DateTime
+  status          String   @default("reserved") // "reserved", "checked_out", "returned", "cancelled"
+  checkedOutAt    DateTime?
+  returnedAt      DateTime?
+  damageNotes     String?
+  createdAt       DateTime @default(now())
+
+  @@index([tenantId])
+  @@index([tenantId, startDate, endDate])
+  @@index([itemId])
+}
+
+model MaintenanceLog {
+  id          String   @id @default(cuid())
+  itemId      String
+  item        InventoryItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  type        String   // "tuning", "waxing", "repair", "inspection", "edge_sharpen"
+  description String?
+  cost        Int?     // cents
+  performedBy String?
+  performedAt DateTime @default(now())
+  nextDueAt   DateTime?
+  notes       String?
+
+  @@index([itemId])
+}
+
+model SizingProfile {
+  id            String   @id @default(cuid())
+  tenantId      String
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  customerEmail String
+  customerName  String
+  heightCm      Int?
+  weightKg      Int?
+  shoeSize      String?
+  age           Int?
+  level         String?  // "beginner", "intermediate", "advanced", "expert"
+  skiLength     String?
+  bootSize      String?
+  helmetSize    String?
+  notes         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([tenantId, customerEmail])
+  @@index([tenantId])
+}
+
+// ==================== GHL AUTOMATION CONFIG ====================
+model GHLAutomationConfig {
+  id                    String   @id @default(cuid())
+  tenantId              String   @unique
+  tenant                Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  autoSyncFields        Boolean  @default(true)
+  autoCreateOpps        Boolean  @default(true)
+  autoSendTriggers      Boolean  @default(true)
+
+  // Workflow IDs (paste from GHL)
+  workflowBookingConfirmed   String?
+  workflowBookingReminder    String?
+  workflowPostTrip           String?
+  workflowReviewRequest      String?
+  workflowLoyaltyUpgrade     String?
+  workflowEquipmentReady     String?
+  workflowAbandonedCart      String?
+
+  // Pipeline / stage names
+  pipelineName               String?  @default("Reservas")
+  stageNuevoLead             String?  @default("Nuevo Lead")
+  stagePresupuestoEnviado    String?  @default("Presupuesto Enviado")
+  stageReservaConfirmada     String?  @default("Reserva Confirmada")
+  stagePagado                String?  @default("Pagado")
+  stageCompletado            String?  @default("Completado")
+  stageResenaRecibida        String?  @default("Reseña Recibida")
+
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
 }

@@ -20,6 +20,7 @@ import {
   Store,
   FileCode,
   Star,
+  Box,
 } from "lucide-react";
 import {
   Sheet,
@@ -53,6 +54,7 @@ const NAV_ITEMS: MobileNavItem[] = [
   { label: "Tienda", href: "/tienda", icon: Store, permission: null },
   { label: "Plantillas", href: "/plantillas", icon: FileCode, permission: null },
   { label: "Reseñas", href: "/resenas", icon: Star, permission: null },
+  { label: "Inventario", href: "/inventario", icon: Box, permission: null },
   { label: "Ajustes", href: "/settings", icon: Settings, permission: "settings:team" },
 ];
 

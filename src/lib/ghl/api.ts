@@ -448,6 +448,19 @@ export class GHLClient {
     return (res.data as GHLTagsResponse).tags;
   }
 
+  // ==================== WORKFLOWS ====================
+
+  async addContactToWorkflow(
+    contactId: string,
+    workflowId: string,
+    eventData?: Record<string, string>,
+  ): Promise<void> {
+    await this.http.post(`/contacts/${contactId}/workflow/${workflowId}`, {
+      eventStartTime: new Date().toISOString(),
+      ...(eventData ? { eventData } : {}),
+    });
+  }
+
   // ==================== UTILITY ====================
 
   getLocationId(): string {

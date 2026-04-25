@@ -22,6 +22,7 @@ import {
   Store,
   FileCode,
   Star,
+  Box,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -137,6 +138,12 @@ const NAV_ITEMS: NavItem[] = [
     icon: Star,
     permission: null,
     roles: ["Owner / Manager"],
+  },
+  {
+    label: "Inventario",
+    href: "/inventario",
+    icon: Box,
+    permission: null,
   },
   {
     label: "Ajustes",
