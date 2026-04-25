@@ -82,6 +82,8 @@ model Tenant {
   bookingRequests    BookingRequest[]
   documentTemplates  DocumentTemplate[]
   generatedDocuments GeneratedDocument[]
+  reviews            Review[]
+  reviewRequests     ReviewRequest[]
 }
 
 // ==================== DESTINATIONS ====================
@@ -104,6 +106,7 @@ model Destination {
   products    Product[]
   opsEvents   OpsEvent[]
   incidentReports IncidentReport[]
+  reviews     Review[]
 
   @@unique([tenantId, slug])
   @@index([tenantId])
@@ -1018,6 +1021,52 @@ model GeneratedDocument {
 
   @@index([tenantId])
   @@index([tenantId, type])
+}
+
+// ==================== REVIEWS ====================
+model Review {
+  id               String       @id @default(cuid())
+  tenantId         String
+  tenant           Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  customerName     String
+  customerEmail    String?
+  rating           Int          // 1-5 stars
+  title            String?
+  content          String?
+  destinationId    String?
+  destination      Destination? @relation(fields: [destinationId], references: [id], onDelete: SetNull)
+  productId        String?
+  reservationId    String?
+  status           String       @default("pending") // pending, approved, rejected, featured
+  response         String?
+  respondedAt      DateTime?
+  source           String?      // email, storefront, manual, google
+  verifiedPurchase Boolean      @default(false)
+  metadata         Json?
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@index([tenantId, rating])
+  @@index([tenantId, destinationId])
+}
+
+model ReviewRequest {
+  id            String    @id @default(cuid())
+  tenantId      String
+  tenant        Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  customerEmail String
+  customerName  String
+  reservationId String?
+  token         String    @unique @default(cuid())
+  sentAt        DateTime?
+  completedAt   DateTime?
+  status        String    @default("pending") // pending, sent, completed, expired
+  createdAt     DateTime  @default(now())
+
+  @@index([tenantId])
+  @@index([token])
 }
 
 model BookingRequest {

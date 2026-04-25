@@ -21,6 +21,7 @@ import {
   Megaphone,
   Store,
   FileCode,
+  Star,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -127,6 +128,13 @@ const NAV_ITEMS: NavItem[] = [
     label: "Plantillas",
     href: "/plantillas",
     icon: FileCode,
+    permission: null,
+    roles: ["Owner / Manager"],
+  },
+  {
+    label: "Reseñas",
+    href: "/resenas",
+    icon: Star,
     permission: null,
     roles: ["Owner / Manager"],
   },

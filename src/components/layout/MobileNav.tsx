@@ -19,6 +19,7 @@ import {
   Megaphone,
   Store,
   FileCode,
+  Star,
 } from "lucide-react";
 import {
   Sheet,
@@ -51,6 +52,7 @@ const NAV_ITEMS: MobileNavItem[] = [
   { label: "Marketing", href: "/marketing", icon: Megaphone, permission: null },
   { label: "Tienda", href: "/tienda", icon: Store, permission: null },
   { label: "Plantillas", href: "/plantillas", icon: FileCode, permission: null },
+  { label: "Reseñas", href: "/resenas", icon: Star, permission: null },
   { label: "Ajustes", href: "/settings", icon: Settings, permission: "settings:team" },
 ];
 
