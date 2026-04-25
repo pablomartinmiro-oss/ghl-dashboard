@@ -23,6 +23,7 @@ import {
   FileCode,
   Star,
   Box,
+  TrendingDown,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -144,6 +145,13 @@ const NAV_ITEMS: NavItem[] = [
     href: "/inventario",
     icon: Box,
     permission: null,
+  },
+  {
+    label: "Precios",
+    href: "/precios",
+    icon: TrendingDown,
+    permission: null,
+    roles: ["Owner / Manager"],
   },
   {
     label: "Ajustes",

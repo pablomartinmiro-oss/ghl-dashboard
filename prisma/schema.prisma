@@ -89,6 +89,8 @@ model Tenant {
   inventoryReservations InventoryReservation[]
   sizingProfiles     SizingProfile[]
   ghlAutomationConfig GHLAutomationConfig?
+  pricingRules       PricingRule[]
+  priceHistory       PriceHistory[]
 }
 
 // ==================== DESTINATIONS ====================
@@ -1207,6 +1209,64 @@ model SizingProfile {
 
   @@unique([tenantId, customerEmail])
   @@index([tenantId])
+}
+
+// ==================== DYNAMIC PRICING ====================
+model PricingRule {
+  id              String   @id @default(cuid())
+  tenantId        String
+  tenant          Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name            String
+  type            String   // "early_bird" | "last_minute" | "demand" | "day_of_week" | "group_size" | "loyalty" | "custom"
+  active          Boolean  @default(true)
+  priority        Int      @default(0)
+
+  // Conditions
+  minDaysAdvance  Int?
+  maxDaysAdvance  Int?
+  minOccupancyPct Int?
+  maxOccupancyPct Int?
+  daysOfWeek      Json?    // [1,2,3,4,5] = weekdays, [6,0] = weekends
+  minGroupSize    Int?
+  loyaltyTiers    Json?    // ["silver", "gold"]
+  destinationIds  Json?    // null = all
+  categoryIds     Json?    // null = all
+
+  // Adjustment
+  adjustmentType  String   // "percentage" | "fixed_cents"
+  adjustmentValue Int      // -20 = 20% discount, -2000 = 20€ discount
+
+  // Limits
+  maxDiscount     Int?     // max discount in cents (floor)
+  minPrice        Int?     // never go below this (cents)
+  stackable       Boolean  @default(false)
+
+  validFrom       DateTime?
+  validUntil      DateTime?
+  metadata        Json?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([tenantId])
+  @@index([tenantId, active])
+}
+
+model PriceHistory {
+  id              String   @id @default(cuid())
+  tenantId        String
+  tenant          Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  productId       String?
+  destinationId   String?
+  date            DateTime
+  basePriceCents  Int
+  finalPriceCents Int
+  rulesApplied    Json     // [{ ruleId, name, adjustment }]
+  occupancyPct    Int?
+  daysAdvance     Int?
+  createdAt       DateTime @default(now())
+
+  @@index([tenantId, date])
+  @@index([tenantId, productId])
 }
 
 // ==================== GHL AUTOMATION CONFIG ====================
