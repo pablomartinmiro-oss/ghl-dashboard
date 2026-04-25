@@ -22,6 +22,7 @@ import {
   Star,
   Box,
   TrendingDown,
+  CreditCard,
 } from "lucide-react";
 import {
   Sheet,
@@ -57,6 +58,7 @@ const NAV_ITEMS: MobileNavItem[] = [
   { label: "Reseñas", href: "/resenas", icon: Star, permission: null },
   { label: "Inventario", href: "/inventario", icon: Box, permission: null },
   { label: "Precios", href: "/precios", icon: TrendingDown, permission: null },
+  { label: "Pagos", href: "/pagos", icon: CreditCard, permission: null },
   { label: "Ajustes", href: "/settings", icon: Settings, permission: "settings:team" },
 ];
 

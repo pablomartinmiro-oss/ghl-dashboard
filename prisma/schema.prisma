@@ -91,6 +91,9 @@ model Tenant {
   ghlAutomationConfig GHLAutomationConfig?
   pricingRules       PricingRule[]
   priceHistory       PriceHistory[]
+  carts              Cart[]
+  paymentIntents     PaymentIntent[]
+  paymentConfig      PaymentConfig?
 }
 
 // ==================== DESTINATIONS ====================
@@ -1267,6 +1270,74 @@ model PriceHistory {
 
   @@index([tenantId, date])
   @@index([tenantId, productId])
+}
+
+// ==================== CHECKOUT + PAYMENTS ====================
+model Cart {
+  id            String   @id @default(cuid())
+  tenantId      String
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  sessionToken  String   @unique
+  customerEmail String?
+  customerName  String?
+  customerPhone String?
+  items         Json
+  promoCode     String?
+  discountCents Int      @default(0)
+  subtotalCents Int      @default(0)
+  totalCents    Int      @default(0)
+  expiresAt     DateTime
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([tenantId])
+  @@index([sessionToken])
+  @@index([expiresAt])
+}
+
+model PaymentIntent {
+  id               String    @id @default(cuid())
+  tenantId         String
+  tenant           Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  cartId           String?
+  bookingRequestId String?
+  customerEmail    String
+  customerName     String
+  amountCents      Int
+  currency         String    @default("EUR")
+  provider         String
+  providerRef      String?
+  status           String    @default("pending")
+  metadata         Json?
+  paidAt           DateTime?
+  failedAt         DateTime?
+  refundedAt       DateTime?
+  errorMessage     String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@index([providerRef])
+}
+
+model PaymentConfig {
+  id                   String   @id @default(cuid())
+  tenantId             String   @unique
+  tenant               Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  redsysEnabled        Boolean  @default(false)
+  redsysMerchant       String?
+  redsysTerminal       String?  @default("1")
+  redsysSecret         String?
+  redsysEnv            String   @default("test")
+  stripeEnabled        Boolean  @default(false)
+  stripePublicKey      String?
+  stripeSecretKey      String?
+  stripeWebhookSecret  String?
+  allowPartialPayments Boolean  @default(false)
+  depositPct           Int?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
 }
 
 // ==================== GHL AUTOMATION CONFIG ====================

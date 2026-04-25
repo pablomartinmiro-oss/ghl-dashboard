@@ -24,6 +24,7 @@ import {
   Star,
   Box,
   TrendingDown,
+  CreditCard,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -150,6 +151,13 @@ const NAV_ITEMS: NavItem[] = [
     label: "Precios",
     href: "/precios",
     icon: TrendingDown,
+    permission: null,
+    roles: ["Owner / Manager"],
+  },
+  {
+    label: "Pagos",
+    href: "/pagos",
+    icon: CreditCard,
     permission: null,
     roles: ["Owner / Manager"],
   },
