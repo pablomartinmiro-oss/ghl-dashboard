@@ -25,6 +25,7 @@ import {
   Box,
   TrendingDown,
   CreditCard,
+  GraduationCap,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -160,6 +161,12 @@ const NAV_ITEMS: NavItem[] = [
     icon: CreditCard,
     permission: null,
     roles: ["Owner / Manager"],
+  },
+  {
+    label: "Escuela",
+    href: "/escuela",
+    icon: GraduationCap,
+    permission: null,
   },
   {
     label: "Ajustes",

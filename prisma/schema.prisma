@@ -94,6 +94,9 @@ model Tenant {
   carts              Cart[]
   paymentIntents     PaymentIntent[]
   paymentConfig      PaymentConfig?
+  instructors        Instructor[]
+  lessonBookings     LessonBooking[]
+  studentProgress    StudentProgress[]
 }
 
 // ==================== DESTINATIONS ====================
@@ -118,6 +121,7 @@ model Destination {
   incidentReports IncidentReport[]
   reviews     Review[]
   inventoryItems InventoryItem[]
+  lessonBookings LessonBooking[]
 
   @@unique([tenantId, slug])
   @@index([tenantId])
@@ -1370,4 +1374,126 @@ model GHLAutomationConfig {
 
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
+}
+
+// ==================== SKI SCHOOL ====================
+model Instructor {
+  id            String   @id @default(cuid())
+  tenantId      String
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  firstName     String
+  lastName      String
+  email         String?
+  phone         String?
+  languages     Json
+  specialties   Json?
+  level         String?
+  bio           String?
+  photoUrl      String?
+  hourlyRate    Int?
+  commissionPct Float?
+  status        String   @default("active")
+  metadata      Json?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  certifications InstructorCertification[]
+  availability   InstructorAvailability[]
+  lessons        LessonBooking[]
+
+  @@index([tenantId])
+  @@index([tenantId, status])
+}
+
+model InstructorCertification {
+  id           String     @id @default(cuid())
+  instructorId String
+  instructor   Instructor @relation(fields: [instructorId], references: [id], onDelete: Cascade)
+  type         String
+  name         String
+  issuedBy     String?
+  issuedAt     DateTime?
+  expiresAt    DateTime?
+  documentUrl  String?
+  status       String     @default("active")
+  createdAt    DateTime   @default(now())
+
+  @@index([instructorId])
+}
+
+model InstructorAvailability {
+  id           String     @id @default(cuid())
+  instructorId String
+  instructor   Instructor @relation(fields: [instructorId], references: [id], onDelete: Cascade)
+  date         DateTime
+  startTime    String
+  endTime      String
+  isAvailable  Boolean    @default(true)
+  notes        String?
+
+  @@unique([instructorId, date, startTime])
+  @@index([instructorId, date])
+}
+
+model LessonBooking {
+  id              String       @id @default(cuid())
+  tenantId        String
+  tenant          Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  instructorId    String?
+  instructor      Instructor?  @relation(fields: [instructorId], references: [id], onDelete: SetNull)
+  destinationId   String?
+  destination     Destination? @relation(fields: [destinationId], references: [id], onDelete: SetNull)
+  type            String
+  date            DateTime
+  startTime       String
+  endTime         String
+  maxStudents     Int          @default(8)
+  currentStudents Int          @default(0)
+  studentLevel    String?
+  language        String       @default("es")
+  priceCents      Int
+  status          String       @default("scheduled")
+  notes           String?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  students LessonStudent[]
+
+  @@index([tenantId])
+  @@index([tenantId, date])
+  @@index([instructorId, date])
+}
+
+model LessonStudent {
+  id            String        @id @default(cuid())
+  lessonId      String
+  lesson        LessonBooking @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  customerName  String
+  customerEmail String?
+  age           Int?
+  level         String?
+  notes         String?
+  reservationId String?
+  createdAt     DateTime      @default(now())
+
+  @@index([lessonId])
+}
+
+model StudentProgress {
+  id             String    @id @default(cuid())
+  tenantId       String
+  tenant         Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  customerEmail  String
+  customerName   String
+  currentLevel   String
+  totalLessons   Int       @default(0)
+  totalHours     Float     @default(0)
+  achievements   Json?
+  lastLessonDate DateTime?
+  notes          String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@unique([tenantId, customerEmail])
+  @@index([tenantId])
 }

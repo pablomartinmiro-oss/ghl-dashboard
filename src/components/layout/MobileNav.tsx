@@ -23,6 +23,7 @@ import {
   Box,
   TrendingDown,
   CreditCard,
+  GraduationCap,
 } from "lucide-react";
 import {
   Sheet,
@@ -59,6 +60,7 @@ const NAV_ITEMS: MobileNavItem[] = [
   { label: "Inventario", href: "/inventario", icon: Box, permission: null },
   { label: "Precios", href: "/precios", icon: TrendingDown, permission: null },
   { label: "Pagos", href: "/pagos", icon: CreditCard, permission: null },
+  { label: "Escuela", href: "/escuela", icon: GraduationCap, permission: null },
   { label: "Ajustes", href: "/settings", icon: Settings, permission: "settings:team" },
 ];
 
