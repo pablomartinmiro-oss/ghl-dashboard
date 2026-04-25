@@ -97,6 +97,10 @@ model Tenant {
   instructors        Instructor[]
   lessonBookings     LessonBooking[]
   studentProgress    StudentProgress[]
+  channels           Channel[]
+  channelBookings    ChannelBooking[]
+  groupBookings      GroupBooking[]
+  groupTemplates     GroupTemplate[]
 }
 
 // ==================== DESTINATIONS ====================
@@ -122,6 +126,7 @@ model Destination {
   reviews     Review[]
   inventoryItems InventoryItem[]
   lessonBookings LessonBooking[]
+  groupBookings  GroupBooking[]
 
   @@unique([tenantId, slug])
   @@index([tenantId])
@@ -1495,5 +1500,130 @@ model StudentProgress {
   updatedAt      DateTime  @updatedAt
 
   @@unique([tenantId, customerEmail])
+  @@index([tenantId])
+}
+
+// ==================== CHANNEL MANAGER ====================
+model Channel {
+  id            String   @id @default(cuid())
+  tenantId      String
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name          String
+  slug          String
+  type          String
+  enabled       Boolean  @default(true)
+  commissionPct Float    @default(0)
+  apiConfig     Json?
+  syncEnabled   Boolean  @default(false)
+  lastSyncAt    DateTime?
+  metadata      Json?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  mappings      ChannelMapping[]
+
+  @@unique([tenantId, slug])
+  @@index([tenantId])
+}
+
+model ChannelMapping {
+  id            String   @id @default(cuid())
+  channelId     String
+  channel       Channel  @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  productId     String
+  externalId    String?
+  externalName  String?
+  channelPrice  Int?
+  enabled       Boolean  @default(true)
+  createdAt     DateTime @default(now())
+
+  @@unique([channelId, productId])
+  @@index([channelId])
+}
+
+model ChannelBooking {
+  id              String   @id @default(cuid())
+  tenantId        String
+  tenant          Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  channelId       String
+  externalRef     String?
+  customerName    String
+  customerEmail   String?
+  productIds      Json
+  totalCents      Int
+  commissionCents Int      @default(0)
+  status          String   @default("pending")
+  syncedAt        DateTime?
+  metadata        Json?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([tenantId])
+  @@index([tenantId, channelId])
+}
+
+// ==================== GROUPS & SCHOOLS ====================
+model GroupBooking {
+  id             String       @id @default(cuid())
+  tenantId       String
+  tenant         Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name           String
+  organizerName  String
+  organizerEmail String
+  organizerPhone String?
+  type           String
+  estimatedSize  Int
+  destinationId  String?
+  destination    Destination? @relation(fields: [destinationId], references: [id], onDelete: SetNull)
+  startDate      DateTime
+  endDate        DateTime?
+  depositCents   Int?
+  totalCents     Int?
+  discountPct    Float?
+  status         String       @default("inquiry")
+  notes          String?
+  metadata       Json?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  members        GroupMember[]
+
+  @@index([tenantId])
+  @@index([tenantId, status])
+}
+
+model GroupMember {
+  id        String       @id @default(cuid())
+  groupId   String
+  group     GroupBooking @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  name      String
+  email     String?
+  age       Int?
+  heightCm  Int?
+  weightKg  Int?
+  shoeSize  String?
+  skiLevel  String?
+  notes     String?
+  createdAt DateTime     @default(now())
+
+  @@index([groupId])
+}
+
+model GroupTemplate {
+  id                  String   @id @default(cuid())
+  tenantId            String
+  tenant              Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name                String
+  type                String
+  defaultSize         Int
+  defaultDays         Int      @default(1)
+  includesEquipment   Boolean  @default(true)
+  includesLessons     Boolean  @default(false)
+  discountPct         Float?
+  pricePerPersonCents Int?
+  description         String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
   @@index([tenantId])
 }

@@ -24,6 +24,8 @@ import {
   TrendingDown,
   CreditCard,
   GraduationCap,
+  Share2,
+  UsersRound,
 } from "lucide-react";
 import {
   Sheet,
@@ -61,6 +63,8 @@ const NAV_ITEMS: MobileNavItem[] = [
   { label: "Precios", href: "/precios", icon: TrendingDown, permission: null },
   { label: "Pagos", href: "/pagos", icon: CreditCard, permission: null },
   { label: "Escuela", href: "/escuela", icon: GraduationCap, permission: null },
+  { label: "Canales", href: "/canales", icon: Share2, permission: null },
+  { label: "Grupos", href: "/grupos", icon: UsersRound, permission: null },
   { label: "Ajustes", href: "/settings", icon: Settings, permission: "settings:team" },
 ];
 

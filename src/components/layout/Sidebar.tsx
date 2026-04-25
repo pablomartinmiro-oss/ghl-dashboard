@@ -26,6 +26,8 @@ import {
   TrendingDown,
   CreditCard,
   GraduationCap,
+  Share2,
+  UsersRound,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -166,6 +168,19 @@ const NAV_ITEMS: NavItem[] = [
     label: "Escuela",
     href: "/escuela",
     icon: GraduationCap,
+    permission: null,
+  },
+  {
+    label: "Canales",
+    href: "/canales",
+    icon: Share2,
+    permission: null,
+    roles: ["Owner / Manager"],
+  },
+  {
+    label: "Grupos",
+    href: "/grupos",
+    icon: UsersRound,
     permission: null,
   },
   {
